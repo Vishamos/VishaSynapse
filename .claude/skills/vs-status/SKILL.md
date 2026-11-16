@@ -1,12 +1,13 @@
 ---
 name: vs-status
-description: 사용자가 "현재 상태는?", "상태 확인", "status"라고 하면 VishaSynapse 진행 상황을 보고한다. docs/work/worklist.md와 Node·npm 버전, npm audit 요약을 바탕으로 현재 진행, 남은 항목, 다음 추천 작업을 정리한다.
+description: 사용자가 "현재 상태는?", "상태 확인", "status"라고 하면 VishaSynapse 진행 상황을 보고한다. docs/work/worklist.md(남은 작업)와 docs/tech_spec/의 "구현 현황"(진행도), Node·npm 버전, npm audit 요약을 바탕으로 현재 진행, 남은 항목, 다음 추천 작업을 정리한다.
 ---
 
 # 상태 보고
 
 ## 1. 수집 (읽기 전용)
-- `docs/work/worklist.md` (맨 위 "현재 진행"과 체크 상태)
+- `docs/work/worklist.md` (맨 위 "현재 진행"과 남은 항목. 끝난 항목은 지워져 있다)
+- `docs/tech_spec/*.md`의 "구현 현황" 표 (명세별 완료·보류 상태)
 - 환경: `node -v`, `npm -v`
 - 의존성: `npm audit`의 마지막 요약 줄 (심각도별 개수)
 
@@ -15,13 +16,14 @@ description: 사용자가 "현재 상태는?", "상태 확인", "status"라고 �
 ## VishaSynapse 상태 (YYYY-MM-DD)
 - 환경: Node vX / npm vY / 취약점 N건
 - 현재 진행: <worklist "현재 진행" 내용>
-- 완료: N건 / 남음: N건 (A: n, B: n, C: n, D: n, E: n, F: n)
+- 진행도: 명세별 "구현 현황" 요약 (예: 01 완료 6 / 보류 3 / 미착수 1)
+- 남음: N건 (그룹별 개수)
 - 사용자 조치 대기: <있으면>
 - 다음 추천: <항목 번호와 이유>
 ```
 
 ## 3. 추천 기준
-1. A(실행 불가) → B(크래시) → C(중계 서버) → D(의존성) → E(공개 준비) → F(기능) 순서
+1. worklist "현재 진행"의 우선순위를 따른다. 그 안에서는 실행 불가·크래시 → 기능 → 의존성 → 공개 준비 순서
 2. 같은 파일을 고치는 항목은 묶어서 추천한다.
 3. 사용자 조치가 필요한 항목(키 재발급, 기획서 검토 등)은 따로 표시한다.
 
