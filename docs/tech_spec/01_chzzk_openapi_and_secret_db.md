@@ -5,6 +5,22 @@
 - 관련 기획: `docs/specs/VishaSynapse_spec.md` F-2(치지직), F-5(DB)
 - 근거 문서: CHZZK Open API (https://chzzk.gitbook.io/chzzk) — Authorization, Session, Chat, Tips
 
+## 구현 현황
+작업이 끝나면 메인 세션이 기록한다. 상세 이력은 커밋 메시지의 항목 번호로 찾는다.
+
+| 명세 | 대상 | 상태 | 항목 |
+|---|---|---|---|
+| §2, §3 | `Env.js` | 완료 2026-11-16 | G1 |
+| §2 | `VIshaDB/VSDB.js`, `tools/db-check.js` | 완료 2026-11-16 (Mac DB TLS 연결 확인) | G2 |
+| §3 | `Secret/SecretStore.js`, `tools/set-secret.js`, `tools/secret-selftest.js` | 완료 2026-11-16 (selftest 4항목 통과) | G3 |
+| §8 | `socket.io-client@2.5.0` 설치 | 완료 2026-11-16 | G4 |
+| §2 | `Chzzk/ChzzkApi.js`, `tools/chzzk-check.js` | 완료 2026-11-16 (앱 인증 성공) | G5 |
+| §2 삭제 | 비공식 연동 코드 5개 | 완료 2026-11-16 | G9 |
+| §5.2, §5.3 | `Chzzk/ChzzkAuth.js`, `Chzzk/CallbackServer.js` | 보류 (중계 서버 우선) | G6 |
+| §5.4, §7 | `Chzzk/ChzzkSession.js` | 보류 | G7 |
+| §4, §5.1 | `Data.js` config, `VishaCore.js` 시작 순서 | 보류 | G8 |
+| §10 | CLAUDE.md·ARCHITECTURE.md 갱신, `.env.example` | 미착수 | G10 |
+
 ## 1. 결정 사항 (2026-11-16)
 
 | 항목 | 결정 |
