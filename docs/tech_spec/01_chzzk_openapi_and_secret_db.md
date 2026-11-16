@@ -1,7 +1,7 @@
 # 01. 치지직 공식 Open API 전환과 비밀 값 DB 저장
 
 - 작성: 2026-11-16
-- 상태: 초안 (사용자 검토 대기)
+- 상태: 일부 구현 후 보류. 2026-11-16 기준 비밀 값 DB 저장(3장)과 Open API 요청 공통부·앱 인증 확인(`tools/chzzk-check.js`)까지 구현. OAuth 연동·세션 소켓(5.2~5.4)은 중계 서버 작업 이후로 미룸
 - 관련 기획: `docs/specs/VishaSynapse_spec.md` F-2(치지직), F-5(DB)
 - 근거 문서: CHZZK Open API (https://chzzk.gitbook.io/chzzk) — Authorization, Session, Chat, Tips
 

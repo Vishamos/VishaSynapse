@@ -2,9 +2,8 @@ const fs = require('fs').promises;
 const path = require('path');
 
 const defaultData = {
-    ChatAPI:{
-        IdHash: '',
-        ChannelId: ''
+    Chzzk:{
+        ClientId: ''
     },
     SocketPort: 0,
 }
