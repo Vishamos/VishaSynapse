@@ -1,8 +1,17 @@
 # 작업 목록
 
-> **현재 진행 (2026-11-16):** G1~G4, G9 완료. 치지직 앱 등록 완료(Client ID 수령, Secret은 사용자가 set-secret으로 저장). 다음은 G5(ChzzkApi) 제안. 비공식 코드가 제거되어 첫 git 커밋 가능 시점. 첫 git 커밋은 G9(비공식 코드 제거) 이후.
+> **현재 진행 (2026-11-16):** **우선순위: 중계 서버(기기 → VishaSynapse → 버추얼 프로그램) 먼저.** 치지직은 G5(앱 인증 확인)까지 완료, G6~G8 보류.
+> **다음 대화에서 할 일:**
+> 1. (사용자) 노션 `노트 / 프로토콜`에 기획서 정리 — 태그 형식 `[기능-N]`·`[메시지-N]`·`[비기능-N]`, 미결 4건(OBS 연결 방향, 메시지 형식 텍스트/바이너리, 새 클라이언트 식별값, Face 데이터 형식)
+> 2. (Claude, `vs-plan-intake`) 노션 기획서 확인·질문 → `docs/tech_spec/02_relay_server.md` → C 그룹 재정리
+> 3. GitHub 라벨 생성(제안 목록: 작업·제안·버그·명세보완·기획검토 / 중계서버·치지직·DB·Vishamos·Face·OBS·Discord / ai-작성), worklist 항목의 이슈 이전 여부 결정
+> 4. `docs/specs/` 정리(노션 이전 후 삭제 또는 링크), `docs/ARCHITECTURE.md` 갱신(예전 치지직 모듈 제거)
 
 진행 방식: 사용자가 항목을 고르면 메인 세션이 수정 방향을 제안하고, 승인된 항목만 반영한다. 수정 후에는 수정한 쪽이 문법 검사·로드·로컬 실행으로 에러만 확인한다. 정밀 검증(qa)과 보안 점검(security)은 요청 시에만.
+
+항목 형식: `- [ ] <번호> <내용> — 기획: [태그] / 명세: <문서 번호> §<절>`
+예: `- [ ] C4 등록 전 클라이언트 중계 차단 — 기획: [기능-1-4] / 명세: 02 §2.2`
+(기획 태그는 노션 기획서에 태그가 붙은 뒤부터 채운다. 근거가 없는 항목은 `기획: 없음(AI 발견 버그)`처럼 표시한다.)
 
 ## 완료
 - [x] Node.js v26.13.1, npm 11.20.0 업데이트 (2026-11-16)
@@ -36,7 +45,8 @@
 - [x] G2 `VIshaDB/VSDB.js` 재작성: 커넥션 풀, TLS 필수, `testConnection()`, `tools/db-check.js` (← A4, B6 대체) (2026-11-16, 개발 PC → Mac DB 연결·TLS 검증·secret_store 확인 완료)
 - [x] G3 `Secret/SecretStore.js` (AES-256-GCM, name을 AAD로 묶음) + `tools/set-secret.js` + `tools/secret-selftest.js` (2026-11-16, selftest 4항목 통과)
 - [x] G4 `socket.io-client@2.5.0` 설치 (`--save-exact --ignore-scripts`, audit 중간 4건 = parseuri 3 + pkg 1, 설치 스크립트 0) (2026-11-16)
-- [ ] G5 `Chzzk/ChzzkApi.js`: Open API 요청 공통부
+- [x] G5 `Chzzk/ChzzkApi.js`: Open API 요청 공통부 + `tools/chzzk-check.js` (앱 인증 확인 전용, 사용자 실행) (2026-11-16, 앱 인증 성공 확인)
+- ⏸ G6~G8은 보류 (2026-11-16 결정: 중계 서버 우선)
 - [ ] G6 `Chzzk/ChzzkAuth.js` + `Chzzk/CallbackServer.js`: OAuth 연동, 토큰 갱신·저장
 - [ ] G7 `Chzzk/ChzzkSession.js`: 세션 소켓, 채팅·후원 구독, 재연결, 이벤트 정규화 (← B1, B2, F1 대체)
 - [ ] G8 `Data.js` config 구조 변경 + `VishaCore.js` 시작 순서 재구성 (← A1, B5 포함)
