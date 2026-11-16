@@ -2,7 +2,7 @@
 
 - 작성: 2026-11-16 / 갱신: 2026-11-16 (노션 재배치 반영)
 - 상태: **초안** (확정 항목만 기록. 남은 결정은 `docs/work/plan_review.md`)
-- 근거 노션: `붸쉐뭬 노션 / VishaSynapse` (수정 2026-11-16 11:27), 하위 `[Synapse-Chzzk]Chzzk API`, `[Synapse-DB]VishasDB`. 관련: `VishasController`, `VishasReflex`, `VishasBody`, `OBS_WebSocket`
+- 근거 노션: `붸쉐뭬 노션 / VishaSynapse` (수정 2026-11-16 11:27), 하위 `[Synapse-Chzzk]Chzzk API`, `[Synapse-DB]VishasDB`. 이 페이지와 하위 페이지만 근거로 삼는다.
 - 사용자 답변: 2026-11-16 노션 `VishaSynapse` 하단 코드 블록(옛 AI 초안)에 달았던 `->` 답변. 코드 블록은 노션에서 삭제됨. 이 문서에 "사용자 답변"으로 표시한 항목이 그것이다.
 - 기획 태그: 노션 항목에 태그가 붙으면 `근거` 열에 채운다.
 
@@ -16,7 +16,7 @@
 
 | 범위 안 | 범위 밖 |
 |---|---|
-| 시작·종료 흐름, 접속·등록, 기기 식별값, 메시지 헤더·라우팅, 에러 메시지 | 페이로드 의미 (예: Face ↔ Vishamos 얼굴 데이터, Controller ↔ Vishamos 캐릭터 배치 명령) |
+| 시작·종료 흐름, 접속·등록, 기기 식별값, 메시지 헤더·라우팅, 에러 메시지 | 페이로드 의미 (예: Face ↔ Vishamos 얼굴 데이터) |
 | 서버가 직접 관리하는 요소: 치지직, DB | 각 클라이언트 프로그램의 내부 동작 |
 | 중계 데이터의 크기·빈도 한도 | |
 
@@ -45,7 +45,7 @@
 | # | 내용 | 구분 | 근거 |
 |---|---|---|---|
 | 3.1 | 인터넷 쪽 접속은 없다. 공유기에서 서버 포트를 열지 않는다. | 확정 | 사용자 답변 (F-1) |
-| 3.2 | 서버는 송출컴에서 돌고, 같은 공유기 안의 다른 기기(휴대폰, 게임컴)도 접속한다. | 확정 | 노션 `VishaSynapse` 프로그램 리스트 다이어그램, `붸쉐뭬 노션` 기기 구성 |
+| 3.2 | 서버는 송출컴에서 돌고, 같은 공유기 안의 다른 기기(휴대폰, 게임컴)도 접속한다. | 확정 | 노션 `VishaSynapse` 프로그램 리스트 다이어그램 |
 | 3.3 | LAN 기기의 등록 인증 여부 | 확인 필요 | plan_review Q5 |
 
 ---
@@ -60,9 +60,7 @@
 | 22 | Face iOS (iPhone) | 중계 서버 클라이언트 | 확정 | 시그니처 |
 | 31 | 치지직 | 서버가 공식 Open API로 직접 연결 | 확정 | 시그니처, `[Synapse-Chzzk]Chzzk API` |
 | 41 | Discord | 미정 | 확정(값만) | 시그니처. plan_review Q12 |
-| 51 | OBS | 미정 | 확인 필요 | 시그니처. plan_review Q10 |
-
-- 식별값이 없는 클라이언트: VishasController, VishasReflex, VishasBody, 워치 심박수(준비중). plan_review Q9.
+| 51 | OBS | 미정 | 확인 필요 | 시그니처, 다이어그램 `vs --> obs`. plan_review Q10 |
 
 ---
 
@@ -83,7 +81,7 @@
 | 6.1 | 간단한 명령은 일반(텍스트) 메시지, 실시간 갱신 데이터는 바이너리로 보낸다. | 확정 | `VishaSynapse` "메세지 형식" |
 | 6.2 | 텍스트 메시지의 형식(JSON 등)과 목적지 표기 | 확인 필요 | plan_review Q3 |
 | 6.3 | 메시지 타입: `00` Send Handshake, `01` Socket Client Init., `21` Send Face Data | 확정(이름만) | `VishaSynapse` "처리 받을 메세지 타입" |
-| 6.4 | 바이너리 바이트 배치, 타입 번호 체계 | 확인 필요 | plan_review Q4 |
+| 6.4 | 바이너리 바이트 배치, 타입 번호 체계, 보낸 기기 표시 | 확인 필요 | plan_review Q3 |
 | 6.5 | 메시지 최대 크기, 초당 횟수 한도 | 확인 필요 | plan_review Q7 |
 | 6.6 | 에러 메시지 형식·코드 | 확인 필요 | plan_review Q6 |
 

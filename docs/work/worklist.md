@@ -2,7 +2,7 @@
 
 > **현재 진행 (2026-11-16):** **우선순위: 중계 서버(기기 → VishaSynapse → 버추얼 프로그램) 먼저.** 치지직은 G5(앱 인증 확인)까지 완료, G6~G8 보류.
 > **다음 대화에서 할 일:**
-> 1. (사용자) 노션 `붸쉐뭬 노션 / VishaSynapse`에 `docs/work/plan_review.md` A 그룹(Q1~Q8) 답 반영
+> 1. (사용자) 노션 `붸쉐뭬 노션 / VishaSynapse`에 `docs/work/plan_review.md` A 그룹 답 반영 (Q3 메시지 형식 최우선, 질문별 `태그 제안` 함께)
 > 2. (Claude, `vs-plan-intake`) 노션 확인 → plan_review 항목 정리 → `docs/tech_spec/02_relay_server.md`(초안 작성됨) 승인 → C 그룹 재정리
 > 3. GitHub 라벨 생성(제안 목록: 작업·제안·버그·명세보완·기획검토 / 중계서버·치지직·DB·Vishamos·Face·OBS·Discord / ai-작성), worklist 항목의 이슈 이전 여부 결정
 > 4. `docs/specs/` 정리(노션 이전 후 삭제 또는 링크), `docs/ARCHITECTURE.md` 갱신(예전 치지직 모듈 제거)
