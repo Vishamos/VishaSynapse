@@ -1,0 +1,50 @@
+{
+  "permissions": {
+    "ask": [
+      "Bash(*VishaSTD*)",
+      "Bash(*LOCALAPPDATA*)",
+      "Bash(*AppData/Local*)",
+      "PowerShell(*VishaSTD*)",
+      "PowerShell(*LOCALAPPDATA*)",
+      "PowerShell(*AppData\\Local*)"
+    ],
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/*.env)",
+      "Read(./__note.txt)",
+      "Read(~/AppData/Local/VishaSTD/**)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Edit(**/*.env)",
+      "Edit(docs/specs/**)",
+      "Write(docs/specs/**)",
+
+      "Bash(* .env*)",
+      "Bash(*/.env*)",
+      "Bash(*__note.txt*)",
+      "Bash(*VishaSTD*config.json*)",
+      "Bash(*ENV_*)",
+      "Bash(printenv*)",
+      "Bash(env)",
+      "Bash(set)",
+      "Bash(export -p*)",
+      "Bash(declare -x*)",
+      "Bash(*console.log(process.env)*)",
+      "Bash(*set-secret*)",
+
+      "PowerShell(* .env*)",
+      "PowerShell(*/.env*)",
+      "PowerShell(*\\.env*)",
+      "PowerShell(*__note.txt*)",
+      "PowerShell(*VishaSTD*config.json*)",
+      "PowerShell(*ENV_*)",
+      "PowerShell(Get-ChildItem env:*)",
+      "PowerShell(gci env:*)",
+      "PowerShell(ls env:*)",
+      "PowerShell(dir env:*)",
+      "PowerShell(*console.log(process.env)*)",
+      "PowerShell(*set-secret*)"
+    ]
+  }
+}
