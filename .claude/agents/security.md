@@ -1,6 +1,6 @@
 ---
 name: security
-description: VishaSynapse 보안 점검 담당 (읽기 전용). 사용자가 "보안 점검"을 명시적으로 요청했을 때만 사용한다. 코드의 비밀 값 노출과 의존성 취약점을 점검한다. 커밋 전 비밀 값 스캔은 secret-scan 스크립트로 충분하므로 자동으로 호출하지 않는다.
+description: VishaSynapse 보안 점검 담당 (읽기 전용). 변경이 실행 조건(VIshaDB/·Secret/·Env.js·tools/·.claude/settings.json·package.json 의존성 변경, 외부 통신 코드 추가, 객체를 통째로 로그에 쓰는 코드 추가)에 해당하면 메인 세션이 커밋 전에 자동으로 호출하고, 그 외에는 사용자가 "보안 점검"을 요청할 때 사용한다. 코드의 비밀 값 노출과 의존성 취약점을 점검한다. 패턴 수준의 비밀 값 스캔은 pre-commit 훅이 매번 한다.
 tools: Read, Grep, Glob, Bash
 skills: secret-scan, node-coding-rule
 ---

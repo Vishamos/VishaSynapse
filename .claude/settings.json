@@ -1,5 +1,9 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(node .temp/*)",
+      "PowerShell(node .temp/*)"
+    ],
     "ask": [
       "Bash(*VishaSTD*)",
       "Bash(*LOCALAPPDATA*)",
