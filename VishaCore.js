@@ -1,7 +1,9 @@
 const { loadEnv } = require('./Env');
 const Data = require('./Data');
+const { testConnection, closePool } = require('./VIshaDB/VSDB');
 const { SocketServer } = require('./VishaSynapse/VSServer');
 
+// 시작 순서: DB 연결 시도 → (치지직·OBS 보류) → 중계 서버 대기 (명세 02 §2.1, §7.0)
 (async () => {
     console.log("클라이언트 실행");
     if (!loadEnv()) {
@@ -14,6 +16,14 @@ const { SocketServer } = require('./VishaSynapse/VSServer');
         process.exitCode = 1;
         return;
     }
-    // TODO(G7·G8): 치지직 공식 Open API 연동 시작 (docs/tech_spec/01_chzzk_openapi_and_secret_db.md 5.1)
-    //SocketServer();
+    // DB 연결이 실패해도 서버는 계속 동작한다 (§2.5)
+    await testConnection();
+    // 치지직(#2)·OBS(#3)는 보류 중이라 시작 시 연결하지 않는다 (§7.0.2)
+    try {
+        SocketServer(serverData.SocketPort);
+    } catch (err) {
+        console.error(`중계 서버 시작 실패: ${err.code || err.name}`);
+        await closePool();
+        process.exitCode = 1;
+    }
 })();

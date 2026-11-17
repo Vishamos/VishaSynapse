@@ -2,10 +2,11 @@
 
 > **현재 진행 (2026-11-17):** **우선순위: 중계 서버(기기 → VishaSynapse → 버추얼 프로그램), 그중 페이셜 연동·바디 연동 먼저.** 치지직(#2)·OBS(#3)·게임컴 입력(#4)은 이슈로 보류.
 > **다음 할 일:**
-> 1. **C6 → C7 → C8 → C9 → C10 → C11을 developer 한 명에게 순서대로** (명세 02 승인 완료 2026-11-17)
+> 1. **C6~C11 후속** (구현·커밋 완료 2026-11-17): 명세 02 보완 질문 11건 정리(plan_review) → 답에 따라 수정 → qa 명세 기준 `test/` 작성. 클라이언트(Vishamos·Face) 등록 방식 변경 이슈 초안
 > 2. (병행, 메인 세션) `Protocol/` 클라이언트 프로토콜 문서 작성 (Face·Body 앱이 기준으로 삼음, 명세 02 §4~6에서 클라이언트가 지킬 부분만). "메시지 용량 표"(클라이언트별 최대 크기·초당 횟수) 포함, 새 시스템을 만들 때마다 한 줄씩 추가 (명세 02 §6.5a). 공개 저장소이므로 내부 주소·경로 제외
 > 3. (사용자) 태그 작업 → Claude가 plan_review·worklist 함께 갱신, 작업 번호를 `Relay-1` 형식으로 재지정
-> 4. GitHub 라벨 나머지 생성(만든 것: 작업·제안·보류·치지직·OBS / 남은 제안: 버그·명세보완·기획검토 / 중계서버·DB·Vishamos·Face·Discord / ai-작성)
+> 4. GitHub 라벨 나머지 생성(만든 것: 작업·제안·보류·치지직·OBS / 남은 제안: 버그·명세보완·기획검토 / 중계서버·DB·Vishamos·Face·Discord / ai-작성 / 사용자검수)
+> 6. (사용자, GitHub 웹) Secret scanning의 Push protection 켜기
 > 5. `docs/specs/` 정리(노션 이전 후 삭제 또는 링크), `docs/ARCHITECTURE.md` 갱신(예전 치지직 모듈 제거)
 
 ## 운영 방식
@@ -25,15 +26,9 @@
 - [ ] (#2 진행 시) `node tools/set-secret.js chzzk_client_secret`으로 Client Secret 입력
 
 ## C. 중계 서버 (VishaSynapse/)
-> 명세 02 승인(2026-11-17). 순서대로 한 developer에게 맡긴다(같은 파일들). C6을 먼저: 포트를 나눠야 developer 로컬 실행과 사용자 테스트를 병행할 수 있다.
-> 옛 버그 C1~C5는 새 명세대로 다시 만들며 함께 없어진다: C1 → C9, C2·C5 → C7, C3 → C9, C4 → C8. 완료 시 커밋 메시지에 함께 적는다.
+> C6~C11 완료(2026-11-17, 진행도는 명세 02 "구현 현황").
 
-- [ ] C6 `VSServer.js:9` 포트 4000 고정 → config `SocketPort` 사용 — 명세: 01 §4
-- [ ] C7 시그니처 열거형과 묶음 대응표(10 → 10·11, 20 → 20·21·22), 시그니처별 `Set`, 서버 전체 연결 번호, 옛 핸들러 맵 정리 — 기획: [Synapse-Message-Signature], [Synapse-Client] / 명세: 02 §4, §5.5c
-- [ ] C8 접속·등록: 접속 시 `Connecting` + 30초 타이머(초과 시 종료 1008 `register_timeout`), `client.register`(`from`=시그니처) → 목록 추가·`client.registered`(`data.index`) → `Connected`, 표에 없는 시그니처 404, 등록 전 메시지 401, `[0, 0]` 인사 제거 — 기획: [Synapse-Client], [Synapse-Message-Type], [Synapse-Message-Error] / 명세: 02 §5.5~5.5f, §5.8
-- [ ] C9 메시지 처리: 텍스트/바이너리 분기(`isBinary`), JSON 소문자 키 검사(400), 서버 시그니처(0·101·111·121)는 서버 처리(모르는 `type`·보류 요소 501, 서버 도착 바이너리 무시), 바이너리는 2바이트 미만 버림·`from`을 서버가 채움, 목적지 + 하위 목록 모두에게 전달, `maxPayload` 64KB(1009), 바이너리·대상 없음에는 에러 안 보냄 — 기획: [Synapse-Message], [Synapse-Message-Type], [Synapse-Message-Error] / 명세: 02 §4.1a, §4.2, §6
-- [ ] C10 연결 체크: 30초마다 ping, 마지막 pong 시각 기록, 다음 ping까지 pong 없으면 `Delay`, 5회면 종료(1006 `ping_timeout`, 목록에서 제거), pong 오면 `Connected` 복귀 — 기획: [Synapse-Client-Ping], [Synapse-Client-Status] / 명세: 02 §5.6~5.7a
-- [ ] C11 시작 순서: DB 연결 시도(실패해도 계속) → 치지직·OBS 연결 생략(보류) → 중계 서버 대기. `VishaCore.js` 실행은 사용자 승인 후 — 기획: [Synapse-Loop] / 명세: 02 §2.1, §7.0
+- [ ] C12 포트 사용 중(`EADDRINUSE`)이면 서버 `'error'` 처리기가 없어 프로세스가 죽음. 동작을 명세에 정한 뒤 수정 — 기획: 없음(AI 발견 버그)
 
 ## G. 치지직 공식 API 전환 (명세 01, 진행도는 명세 01 "구현 현황")
 > G6~G8은 이슈 #2로 옮김(보류). OBS #3, 게임컴 입력 #4(#3 선행).

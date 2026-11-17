@@ -5,7 +5,7 @@ const defaultData = {
     Chzzk:{
         ClientId: ''
     },
-    SocketPort: 0,
+    SocketPort: 4000,
 }
 
 const filePath = path.join(process.env.LOCALAPPDATA, 'VishaSTD/server', 'config.json');

@@ -1,88 +1,127 @@
-const {VSCommand, TargetType} = require('./VSServerCommand');
-const {clients} = require('./VSServerData');
+const WebSocket = require('ws');
+const {
+    Signature,
+    SERVER_SIGNATURES,
+    CLIENT_SIGNATURES,
+    MessageType,
+    ErrorCode,
+    ClientStatus,
+} = require('./VSServerCommand');
+const { NextConnectionIndex, AddRegistered, GetTargets } = require('./VSServerData');
 
+// 바이너리 헤더 [to, from] (명세 02 §6.4)
+const BINARY_TO = 0;
+const BINARY_FROM = 1;
+const BINARY_HEADER_LENGTH = 2;
 
-const TargetHandler = {
-    [TargetType.VS_SERVER] : (cmd, id, m) => {
-        console.log('서버 명령 실행');
-        return ServerCMD(cmd, id, m);
-    },
-    [TargetType.VISHAMOS] : () => {
-        console.log('TODO : 버츄얼로 메시지 전송');
-    },
-    [TargetType.FACE_ANDROID] : () => {
-        console.log('TODO : 페이스(안드로이드)로 메시지 전송');
-    },
-    [TargetType.FACE_IOS] : () => {
-        console.log('TODO : 페이스(IOS)로 메시지 전송');
-    },
-    [TargetType.CHZZK] : () => {
-        console.log('TODO : CHZZK으로 메시지 전송');
-    },
-    [TargetType.DISCORD] : () => {
-        console.log('TODO : DISCORD로 메시지 전송');
-    },
-    [TargetType.OBS] : () => {
-        console.log('TODO : OBS로 메시지 전송');
-    },
+function ClientLabel(client) {
+    return client.index === null ? '미등록 연결' : `${client.index}번 클라이언트(${client.signature})`;
 }
 
-const ServerHander = {
-    [VSCommand.INIT_CLIENT] : (id, m) => {
-        console.log('클라이언트 초기화');
-        return InitClient(id, m);
-    },
-    [VSCommand.NOTHING_TO_DO] : () => {
-        console.log('서버 명령 없음');
-    },
+function IsOpen(client) {
+    return Boolean(client.socket) && client.socket.readyState === WebSocket.OPEN;
 }
 
-function ServerCMD(cmd, m, id){
-    try{
-        const vscmd = ServerHander[cmd];
-        if (cmd === VSCommand.INIT_CLIENT) {
-            const client = clients.get(id);
-            client.deviceType = m.message.readUInt8(2); //두 번째를 읽어 넣는다.
-            console.log(`Client ${id} registered as ${client.deviceType}`);
-            client.ClearTime();
+// 서버가 보내는 JSON에도 type을 붙인다 (§6.2c). 등록 전이면 to는 null.
+function SendJson(client, type, data) {
+    if (!IsOpen(client)) return;
+    client.socket.send(JSON.stringify({ to: client.signature, from: Signature.SERVER, type, data }));
+}
 
-            const InitMessage = Buffer.alloc(2);
-            InitMessage.writeUInt8(0, 0);
-            InitMessage.writeUInt8(0x01, 1);
-            client.socket.send(InitMessage, { binary: true });
-        }
+function SendError(client, error) {
+    SendJson(client, MessageType.ERROR, { code: error.code, message: error.message });
+}
+
+// 헤더 형식 검사 (§6.2, §6.2a, §6.2b). 키는 소문자만 읽으므로 대문자 키는 누락으로 본다.
+function ParseJson(text) {
+    let message;
+    try {
+        message = JSON.parse(text);
+    } catch {
+        return null;
     }
-    catch(e){
-        console.log(`serverCMD error :  ${e.message}`);
+    if (message === null || typeof message !== 'object' || Array.isArray(message)) return null;
+    if (!Number.isInteger(message.to) || !Number.isInteger(message.from)) return null;
+    if (message.type !== undefined && typeof message.type !== 'string') return null;
+    if (SERVER_SIGNATURES.has(message.to) && message.type === undefined) return null;
+    return message;
+}
+
+function IsKnownSignature(value) {
+    return SERVER_SIGNATURES.has(value) || CLIENT_SIGNATURES.has(value);
+}
+
+// 등록 (§5.5a~5.5d, §5.5f)
+function Register(client, message) {
+    if (client.status !== ClientStatus.CONNECTING) {
+        console.log(`${ClientLabel(client)}: 이미 등록됨, 재등록 요청 무시`);
+        return;
+    }
+    if (!CLIENT_SIGNATURES.has(message.from)) {
+        SendError(client, ErrorCode.NOT_FOUND);
+        return;
+    }
+    clearTimeout(client.registerTimer);
+    client.registerTimer = null;
+    client.signature = message.from;
+    client.index = NextConnectionIndex();
+    client.status = ClientStatus.CONNECTED;
+    AddRegistered(client);
+    SendJson(client, MessageType.CLIENT_REGISTERED, { index: client.index });
+    console.log(`${ClientLabel(client)} 등록됨`);
+}
+
+function HandleText(client, data) {
+    const text = data.toString('utf8');
+    const message = ParseJson(text);
+    if (!message) {
+        SendError(client, ErrorCode.BAD_REQUEST);
+        return;
+    }
+    if (message.to === Signature.SERVER && message.type === MessageType.CLIENT_REGISTER) {
+        Register(client, message);
+        return;
+    }
+    if (client.status === ClientStatus.CONNECTING) {
+        SendError(client, ErrorCode.NOT_REGISTERED);
+        return;
+    }
+    if (!IsKnownSignature(message.to)) {
+        SendError(client, ErrorCode.NOT_FOUND);
+        return;
+    }
+    // 서버 시그니처: 모르는 type, 보류 요소(101·111·121)는 501 (§6.12, §7.0)
+    if (SERVER_SIGNATURES.has(message.to)) {
+        SendError(client, ErrorCode.NOT_IMPLEMENTED);
+        return;
+    }
+    // 헤더만 확인하고 받은 그대로 전달한다 (§6.7). 받을 대상이 없어도 에러는 보내지 않는다 (§6.12b).
+    for (const target of GetTargets(message.to)) {
+        if (IsOpen(target)) target.socket.send(text);
     }
 }
 
-function VSHandler(m, id)
-{
-    try{
-        const targetType = m.message.readUInt8(0)
-        const handler = TargetHandler[targetType];
-        if(targetType === TargetType.VS_SERVER)
-            {
-                const messageType = m.message.readUInt8(1);
-                ServerCMD(messageType, m, id);
-                console.log(id + ` - binary message : `+ m.message);
-            }
-            else
-            {
-                clients.forEach(({ socket, deviceType }, id) => {
-                    if (deviceType === targetType) {
-                        socket.send(m.message, { binary: true });
-                        console.log(`Message sent to Client ${id} (${deviceType})`);
-                    }
-                });
-            }
-        if(!handler){
-            console.error('알 수 없는 명령: ', target);
-        }
-    }catch (error){
-        console.error("MessageHandler Error: ", error.message);
+// 바이너리의 문제와 받을 대상 없음에는 에러를 보내지 않는다 (§6.12b)
+function HandleBinary(client, data) {
+    if (client.status === ClientStatus.CONNECTING) return;
+    if (data.length < BINARY_HEADER_LENGTH) return;
+    const to = data.readUInt8(BINARY_TO);
+    // 서버가 도착지인 바이너리는 무시한다 (§6.8a, §7.0.2)
+    if (SERVER_SIGNATURES.has(to)) return;
+    // from은 보내는 쪽 값을 믿지 않고 등록 정보로 채운다 (§6.4a)
+    data.writeUInt8(client.signature, BINARY_FROM);
+    for (const target of GetTargets(to)) {
+        if (IsOpen(target)) target.socket.send(data, { binary: true });
     }
 }
 
-module.exports = {VSHandler}
+function HandleMessage(client, data, isBinary) {
+    if (!IsOpen(client)) return;
+    if (isBinary) {
+        HandleBinary(client, data);
+    } else {
+        HandleText(client, data);
+    }
+}
+
+module.exports = { HandleMessage, ClientLabel };
