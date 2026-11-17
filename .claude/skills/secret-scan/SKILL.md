@@ -25,7 +25,7 @@ Data.js:6 [long-hex-literal]
 |---|---|
 | `naver-cookie` | `NID_AUT=`, `NID_SES=` 뒤에 템플릿 변수(`${`)가 아닌 실제 값 |
 | `password-literal` | password·pass·secret·token 키에 따옴표 문자열 값 |
-| `private-ip` | 10.x, 172.16~31.x, 192.168.x 주소 |
+| `private-ip` | 10.x, 172.16∼31.x, 192.168.x 주소 |
 | `private-key` | PEM 개인 키 헤더 |
 | `long-hex-literal` | 따옴표 안의 32자 이상 hex 문자열 |
 | `db-url` | 계정·비밀번호가 포함된 DB 접속 URL |
