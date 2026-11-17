@@ -116,10 +116,10 @@
 | 6.2c | 서버가 보내는 JSON(등록 완료, 에러 등)에도 `type`을 붙인다. | 확정(승인) | `[Synapse-Message-Type]` |
 | 6.4 | 바이너리: 서버가 읽는 것은 `[to, from]` (각 1바이트), 나머지는 데이터 | 확정 | `[Synapse-Message]` |
 | 6.4a | 서버는 중계하는 메시지를 변형하지 않는다(`from`도 덮어쓰지 않음). 바이너리 `from`이 보낸 클라이언트의 등록 시그니처와 다르면 그 클라이언트의 연결을 끊는다(종료 코드 1008 `from_mismatch`, 서버 로그 없음). | 확정 | `[Synapse-Message-Relay]`, `[Synapse-Message-Error]` |
-| 6.4b | 바이너리 데이터의 숫자는 리틀 엔디언으로 구성한다. **클라이언트(Vishamos·Face·Body)가 지킬 규칙**이며, 서버는 바이너리를 만들지 않고 1바이트 헤더만 읽어 전달하므로 서버 구현에는 영향이 없다. `Protocol/` 문서에 넣는다. | 확정 | `[Synapse-Message]` |
+| 6.4b | 바이너리 데이터의 숫자는 리틀 엔디언으로 구성한다. **클라이언트(Vishamos·Face·Body)가 지킬 규칙**이며, 서버는 바이너리를 만들지 않고 1바이트 헤더만 읽어 전달하므로 서버 구현에는 영향이 없다. `docs/protocol/`에 넣는다. | 확정 | `[Synapse-Message]` |
 | 6.4c | 중계하는 JSON의 `from`이 보낸 클라이언트의 등록 시그니처와 다르면 전달하지 않고 400을 돌려준다. | 확정 | `[Synapse-Message-Relay]`. 코드 번호(400)는 노션 반영 대기(plan_review "노션 정리") |
 | 6.5 | 메시지 최대 크기는 64KB(JSON·바이너리 공통). 초당 횟수 한도는 두지 않는다. 길이는 가변이며 서버가 맞추거나 채우지 않는다. | 확정 | `[Synapse-Message-Signature]`. 현재 가장 큰 메시지는 Body 약 1,078바이트 |
-| 6.5a | 프로토콜을 만들 때마다 메시지의 최대 크기와 초당 횟수를 파악해 `Protocol/` 문서의 "메시지 용량 표"에 적는다. | 확정 | `[Synapse-Message-Signature]` |
+| 6.5a | 프로토콜을 만들 때마다 메시지의 최대 크기와 초당 횟수를 파악해 `docs/protocol/`의 "메시지 용량 표"에 적는다. | 확정 | `[Synapse-Message-Signature]` |
 | 6.5b | 64KB를 넘는 메시지를 받으면 연결을 끊는다(종료 코드 1009, `ws`의 `maxPayload`). | 확정 | `[Synapse-Message-Error]` |
 | 6.7 | 서버는 헤더만 확인하고 데이터를 전달한다. | 확정 | `[Synapse-Message]`, `[Synapse-Message-Relay]` |
 | 6.8 | 서버가 처리하는 메시지는 JSON만이다. | 확정 | `[Synapse-Message-Type]` |
@@ -138,7 +138,7 @@
 - 바이너리 종류 번호와 데이터 배치는 받는 쪽 페이지 표에 한 줄씩 적는다(기기 시그니처와 별개).
 - Face 송신은 `[0a, 15, …]` → `[to, from, 15, …]`로 바뀌므로 Vishamos·VishaFace 수정 필요. 등록도 JSON으로 바뀌므로 두 앱의 등록 코드를 고치고, `[0, 0]`을 기다린 뒤 등록하는지 구현 때 확인한다(§5.5). 시그니처 값도 바뀌었다(Vishamos 11, Body 31).
 - Body(31): 별도 저장소 Vishas_Capture. 프레임당 바이너리 약 1,076바이트 + 헤더 2 = 1,078바이트, 초당 30회(그쪽 설계 메모). Synapse에는 WebSocket으로 접속하고, 끊김이 실제로 보이면 서버 쪽 UDP 수신을 검토한다(Unity 직접 UDP는 본방·테스트 동시 수신이 안 돼 비추천). Vishamos 수신 버퍼(1KB, §8.1-4)를 넘으므로 Vishamos 수정 필요.
-- 클라이언트용 프로토콜 문서: 통신 규칙의 기준은 이 저장소다. 명세 승인 후 클라이언트가 지킬 부분만 `Protocol/`에 따로 둔다(Vishas_Capture가 이 폴더를 읽음). 공개 저장소이므로 내부 주소·경로는 넣지 않는다.
+- 클라이언트용 프로토콜 문서: 통신 규칙의 기준은 이 저장소다. 명세 승인 후 클라이언트가 지킬 부분만 `docs/protocol/`에 따로 둔다(Vishas_Capture 등 클라이언트 프로젝트가 읽음). 공개 저장소이므로 내부 주소·경로는 넣지 않는다.
 - 직접 관리 요소별 Type(예: `db.viewer.get` → `db.viewer.get.result`, `obs.scene.set`, `chzzk.chat`)은 각 페이지의 "메시지 처리"에 둔다(§6.9). ping은 WebSocket 자체 ping/pong이라 Type 없음.
 
 ---
