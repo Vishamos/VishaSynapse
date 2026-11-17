@@ -16,11 +16,11 @@
 | §8 | `socket.io-client@2.5.0` 설치 | 완료 2026-11-16 | G4 |
 | §2 | `Chzzk/ChzzkApi.js`, `tools/chzzk-check.js` | 완료 2026-11-16 (앱 인증 성공) | G5 |
 | §2 삭제 | 비공식 연동 코드 5개 | 완료 2026-11-16 | G9 |
-| §5.2, §5.3 | `Chzzk/ChzzkAuth.js`, `Chzzk/CallbackServer.js` | 보류 (중계 서버 우선, #2) | G6 |
-| §5.4, §7 | `Chzzk/ChzzkSession.js` | 보류 (#2) | G7 |
+| §5.2, §5.3 | `Chzzk/ChzzkAuth.js`, `Chzzk/CallbackServer.js` | 보류 (중계 서버 우선, #2) | Chzzk-1 |
+| §5.4, §7 | `Chzzk/ChzzkSession.js` | 보류 (#2) | Chzzk-2 |
 | §4 `SocketPort` | `VishaSynapse/VSServer.js`, `VishaCore.js`, `Data.js`(기본값 4000) | 완료 2026-11-17 | C6 |
-| §4, §5.1 | `Data.js` config(나머지 항목), `VishaCore.js` 시작 순서 | 보류 (#2) | G8 |
-| §10 | CLAUDE.md·ARCHITECTURE.md 갱신, `.env.example` | 미착수 | G10 |
+| §4, §5.1 | `Data.js` config(나머지 항목), `VishaCore.js` 시작 순서 | 보류 (#2) | Chzzk-3 |
+| §10 | CLAUDE.md·ARCHITECTURE.md 갱신, `.env.example` | 미착수 | Doc-1 |
 
 ## 1. 결정 사항 (2026-11-16)
 
