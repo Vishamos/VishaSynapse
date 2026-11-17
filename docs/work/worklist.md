@@ -2,11 +2,19 @@
 
 > **현재 진행 (2026-11-18):** **우선순위: 중계 서버(기기 → VishaSynapse → 버추얼 프로그램), 그중 페이셜 연동·바디 연동 먼저.** 치지직(#2)·OBS(#3)·게임컴 입력(#4)은 이슈로 보류.
 > **다음 할 일:**
-> 1. **C6∼C11 후속**: Relay-1∼3 완료(2026-11-18) → qa 명세 기준 `test/` 작성. 진행을 막지 않는 보완 질문은 이슈 #5·#6. 클라이언트(Vishamos·Face·Body) 등록 방식·시그니처 변경(11·31) 이슈 초안
-> 2. 클라이언트 프로토콜 문서 `docs/protocol/README.md` 작성 완료(2026-11-18). 명세 02가 바뀌면 함께 고치고, 새 메시지를 만들 때마다 "메시지 용량 표"에 한 줄씩 추가 (명세 02 §6.5a)
-> 3. GitHub 라벨 나머지 생성(만든 것: 작업·제안·보류·치지직·OBS / 남은 제안: 버그·명세보완·기획검토 / 중계서버·DB·Vishamos·Face·Discord / ai-작성 / 사용자검수)
-> 4. (사용자, GitHub 웹) Secret scanning의 Push protection 켜기
-> 5. `docs/specs/` 정리(노션 이전 후 삭제 또는 링크), `docs/ARCHITECTURE.md` 갱신(예전 치지직 모듈 제거)
+> 1. **실기기 연동 (Face iOS → Synapse → Vishamos)**. 서버 쪽 작업은 끝났고(Relay-1∼3), 남은 것은 클라이언트와 실행 환경이다. 규칙은 `docs/protocol/README.md`(특히 §9 옛 방식에서 바꿀 점).
+>    - (사용자) 송출컴 Windows 방화벽에서 TCP 4000 인바운드 허용(개인 네트워크), `node VishaCore.js`로 서버 실행
+>    - (사용자, Face iOS 프로젝트) JSON `client.register`(from 22)로 등록, 바이너리 헤더 `[11, 22, 15, …]`, 쓰는 WebSocket 라이브러리의 pong 자동 응답 확인
+>    - (Claude, 제안만 함·미착수) `.temp/` 테스트 수신기: 11로 등록해 받은 바이너리의 바이트·초당 횟수 출력. Vishamos를 고치기 전에 Face iOS만 따로 확인하는 용도
+>    - (사용자, Vishamos 프로젝트) 11로 JSON 등록, 바이너리 데이터 시작 위치 한 칸 뒤로(`[11, 22, 15, …]`). Body 연동 전에는 수신 버퍼 1KB 확장
+>    - 클라이언트 3개(Vishamos·Face·Body) 변경을 각 저장소 이슈로 둘지 결정. Body(Vishas_Capture)는 `Protocol/` 대신 `docs/protocol/` 참조로 변경
+> 2. **qa**: 명세 02 기준 `test/` 작성 (C6∼C11, Relay-1∼3 범위). 진행을 막지 않는 보완 질문은 이슈 #5·#6·#7
+> 3. **Relay-4**: 포트 사용 중 처리와 포트 값 검사(이슈 #5의 4)를 명세에 정한 뒤 수정
+> 4. (사용자, 노션) plan_review "노션 정리" 목록. 코드 작업은 막지 않음
+> 5. `docs/protocol/README.md`는 명세 02가 바뀌면 함께 고치고, 새 메시지를 만들 때마다 "메시지 용량 표"에 한 줄씩 추가 (명세 02 §6.5a)
+> 6. GitHub 라벨 나머지 생성(만든 것: 작업·제안·보류·치지직·OBS / 남은 제안: 버그·명세보완·기획검토 / 중계서버·DB·Vishamos·Face·Discord / ai-작성 / 사용자검수)
+> 7. (사용자, GitHub 웹) Secret scanning의 Push protection 켜기
+> 8. `docs/specs/` 정리(노션 이전 후 삭제 또는 링크), `docs/ARCHITECTURE.md` 갱신(예전 치지직 모듈 제거)
 
 ## 운영 방식
 - **해야 할 작업만 적는다.** 끝난 항목은 지운다.
