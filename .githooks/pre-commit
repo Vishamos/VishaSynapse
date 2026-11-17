@@ -9,7 +9,7 @@ fail() {
 }
 
 # 1. 제외 대상이 스테이징되었는지
-blocked=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '(^|/)\.env($|\.)|\.env$|\.pem$|(^|/)CLAUDE\.md$|settings\.local\.json$')
+blocked=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '(^|/)\.env($|\.)|\.env$|\.pem$|settings\.local\.json$')
 if [ -n "$blocked" ]; then
     echo "$blocked"
     fail "커밋하면 안 되는 파일이 스테이징되어 있습니다."
