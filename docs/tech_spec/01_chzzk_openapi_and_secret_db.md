@@ -1,7 +1,7 @@
 # 01. 치지직 공식 Open API 전환과 비밀 값 DB 저장
 
 - 작성: 2026-11-16
-- 상태: 일부 구현 후 보류. 2026-11-16 기준 비밀 값 DB 저장(3장)과 Open API 요청 공통부·앱 인증 확인(`tools/chzzk-check.js`)까지 구현. OAuth 연동·세션 소켓(5.2~5.4)은 중계 서버 작업 이후로 미룸
+- 상태: 일부 구현 후 보류. 2026-11-16 기준 비밀 값 DB 저장(3장)과 Open API 요청 공통부·앱 인증 확인(`tools/chzzk-check.js`)까지 구현. OAuth 연동·세션 소켓(5.2∼5.4)은 중계 서버 작업 이후로 미룸
 - 관련 기획: `docs/specs/VishaSynapse_spec.md` F-2(치지직), F-5(DB)
 - 근거 문서: CHZZK Open API (https://chzzk.gitbook.io/chzzk) — Authorization, Session, Chat, Tips
 
@@ -147,7 +147,7 @@
 5. `SYSTEM` `type: subscribed` 두 건 확인 → 수신 시작
 6. `CHAT`, `DONATION` 이벤트 → 7장 형식으로 정규화
 7. `SYSTEM` `type: revoked` → 권한 철회. 토큰을 지우고 재연동 안내
-8. 연결이 끊기면 세션 URL을 **새로 발급받아** 1~5를 다시 한다. 대기 시간은 1초부터 두 배씩 늘려 최대 60초.
+8. 연결이 끊기면 세션 URL을 **새로 발급받아** 1∼5를 다시 한다. 대기 시간은 1초부터 두 배씩 늘려 최대 60초.
 
 이벤트 본문이 JSON 문자열로 한 번 더 감싸져 올 수 있다는 커뮤니티 보고가 있으므로, 문자열이면 한 번 더 파싱한다.
 
