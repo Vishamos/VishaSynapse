@@ -1,4 +1,4 @@
-const { SignatureGroup, CLIENT_SIGNATURES } = require('./VSServerCommand');
+const { CLIENT_SIGNATURES } = require('./VSServerCommand');
 
 // 시그니처별 등록 클라이언트 목록 (명세 02 §4.3a)
 const clientsBySignature = new Map();
@@ -29,15 +29,9 @@ function RemoveClient(client) {
     if (list) list.delete(client);
 }
 
-// 목적지 목록과 대응표에 적힌 하위 목록의 클라이언트 모두 (§4.1a)
+// 목적지로 등록된 클라이언트 모두. 묶음은 없다 (§4.1)
 function GetTargets(to) {
-    const signatures = SignatureGroup[to] || [to];
-    const targets = [];
-    for (const signature of signatures) {
-        const list = clientsBySignature.get(signature);
-        if (list) targets.push(...list);
-    }
-    return targets;
+    return clientsBySignature.get(to) || [];
 }
 
 module.exports = { connections, NextConnectionIndex, AddRegistered, RemoveClient, GetTargets };

@@ -12,6 +12,7 @@
 | 명세 | 대상 | 상태 | 항목 |
 |---|---|---|---|
 | §4∼6, §5.5∼5.8, §2.1, §7.0 | `VishaSynapse/` 4개 파일(VSServerCommand·VSServerData·VSHandler·VSServer), `VishaCore.js`, `Data.js` | 구현 2026-11-17 (로컬 동작 확인, VishaCore·DB 미실행, 명세 보완 질문 11건 대기, qa 미실행) | C6∼C11 |
+| §4, §4.1, §6.4a, §6.4c, §6.10a, §6.12a, §6.12d | `VishaSynapse/` VSServerCommand·VSServerData·VSHandler | 구현 2026-11-18 (로컬 동작 테스트 13개 통과, 클라이언트 앱 미수정이라 실기기 미확인, qa 미실행) | Relay-1∼3 |
 
 항목 구분: `확정` 기획서·사용자 답변에 명확한 것 / `확정(승인)` 보충한 해석을 사용자가 승인한 것 / `해석` 모호한 부분을 보충한 것(승인 필요) / `보류` 해당 작업을 시작할 때 정함 / `확인 필요` 결정이 필요한 것 / `AI 제안` 기획서에 없는 것
 

@@ -5,6 +5,7 @@ const {
     CLIENT_SIGNATURES,
     MessageType,
     ErrorCode,
+    CloseCode,
     ClientStatus,
 } = require('./VSServerCommand');
 const { NextConnectionIndex, AddRegistered, GetTargets } = require('./VSServerData');
@@ -22,10 +23,11 @@ function IsOpen(client) {
     return Boolean(client.socket) && client.socket.readyState === WebSocket.OPEN;
 }
 
-// 서버가 보내는 JSON에도 type을 붙인다 (§6.2c). 등록 전이면 to는 null.
+// 서버가 보내는 JSON에도 type을 붙인다 (§6.2c). 등록 전이면 to 키를 넣지 않는다 (§6.10a).
 function SendJson(client, type, data) {
     if (!IsOpen(client)) return;
-    client.socket.send(JSON.stringify({ to: client.signature, from: Signature.SERVER, type, data }));
+    const header = client.signature === null ? {} : { to: client.signature };
+    client.socket.send(JSON.stringify({ ...header, from: Signature.SERVER, type, data }));
 }
 
 function SendError(client, error) {
@@ -95,10 +97,19 @@ function HandleText(client, data) {
         SendError(client, ErrorCode.NOT_IMPLEMENTED);
         return;
     }
-    // 헤더만 확인하고 받은 그대로 전달한다 (§6.7). 받을 대상이 없어도 에러는 보내지 않는다 (§6.12b).
-    for (const target of GetTargets(message.to)) {
-        if (IsOpen(target)) target.socket.send(text);
+    // 중계하는 JSON의 from이 등록 시그니처와 다르면 전달하지 않는다 (§6.4c)
+    if (message.from !== client.signature) {
+        SendError(client, ErrorCode.BAD_REQUEST);
+        return;
     }
+    // 헤더만 확인하고 받은 그대로 전달한다 (§6.7). 받을 대상이 없으면 404 (§6.12d).
+    let sent = 0;
+    for (const target of GetTargets(message.to)) {
+        if (!IsOpen(target)) continue;
+        target.socket.send(text);
+        sent += 1;
+    }
+    if (sent === 0) SendError(client, ErrorCode.NOT_FOUND);
 }
 
 // 바이너리의 문제와 받을 대상 없음에는 에러를 보내지 않는다 (§6.12b)
@@ -108,8 +119,11 @@ function HandleBinary(client, data) {
     const to = data.readUInt8(BINARY_TO);
     // 서버가 도착지인 바이너리는 무시한다 (§6.8a, §7.0.2)
     if (SERVER_SIGNATURES.has(to)) return;
-    // from은 보내는 쪽 값을 믿지 않고 등록 정보로 채운다 (§6.4a)
-    data.writeUInt8(client.signature, BINARY_FROM);
+    // 메시지는 변형하지 않는다. from이 등록 시그니처와 다르면 로그 없이 연결을 끊는다 (§6.4a)
+    if (data.readUInt8(BINARY_FROM) !== client.signature) {
+        client.socket.close(CloseCode.FROM_MISMATCH.code, CloseCode.FROM_MISMATCH.reason);
+        return;
+    }
     for (const target of GetTargets(to)) {
         if (IsOpen(target)) target.socket.send(data, { binary: true });
     }
