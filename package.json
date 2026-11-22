@@ -1,17 +1,18 @@
 {
-  "name": "my-socket-server",
+  "name": "vishasynapse",
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
+  "main": "VishaCore.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node VishaCore.js",
+    "test": "node --test test/"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
-  "description": "",
+  "description": "방송용 기기·프로그램을 WebSocket으로 잇는 통합 중계 서버",
   "dependencies": {
     "mysql2": "^3.12.0",
-    "pkg": "^5.8.1",
     "socket.io-client": "2.5.0",
     "ws": "^8.18.0"
   }

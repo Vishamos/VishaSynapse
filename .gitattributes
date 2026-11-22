@@ -2,3 +2,5 @@
 * text=auto
 # git 훅은 sh로 실행되므로 LF 고정
 .githooks/* text eol=lf
+# 배치 파일은 cmd가 LF 줄바꿈에서 오작동할 수 있어 CRLF 고정
+*.bat text eol=crlf

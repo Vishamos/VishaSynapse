@@ -42,8 +42,6 @@
 > Chzzk-1∼3(옛 G6∼G8)은 이슈 #2로 옮김(보류). OBS #3, 게임컴 입력 #4(#3 선행).
 
 ## Dep. 의존성·설정
-- [ ] Dep-1 `pkg` 제거 (로컬·전역). 수정 불가 취약점, Node 26 미지원. 필요 시 SEA로 대체
-- [ ] Dep-2 `package.json` `main` 수정, `start`·`test` 스크립트 추가, 이름 정리
 - [ ] Dep-3 전역 `@google/gemini-cli@0.22.4` 업데이트 또는 삭제
 
 ## Doc. 문서·공개 준비
