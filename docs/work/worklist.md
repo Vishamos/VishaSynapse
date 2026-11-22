@@ -14,7 +14,7 @@
 > 5. `docs/protocol/README.md`는 명세 02가 바뀌면 함께 고치고, 새 메시지를 만들 때마다 "메시지 용량 표"에 한 줄씩 추가 (명세 02 §6.5a)
 > 6. GitHub 라벨 나머지 생성(만든 것: 작업·제안·보류·치지직·OBS / 남은 제안: 버그·명세보완·기획검토 / 중계서버·DB·Vishamos·Face·Discord / ai-작성 / 사용자검수)
 > 7. (사용자, GitHub 웹) Secret scanning의 Push protection 켜기
-> 8. `docs/specs/` 정리(노션 이전 후 삭제 또는 링크), `docs/ARCHITECTURE.md` 갱신(예전 치지직 모듈 제거)
+> 8. `docs/specs/` 정리(노션 이전 후 삭제 또는 링크)
 
 ## 운영 방식
 - **해야 할 작업만 적는다.** 끝난 항목은 지운다.
@@ -45,7 +45,6 @@
 - [ ] Dep-3 전역 `@google/gemini-cli@0.22.4` 업데이트 또는 삭제
 
 ## Doc. 문서·공개 준비
-- [ ] Doc-1 CLAUDE.md 비밀 값 규칙 갱신, `docs/ARCHITECTURE.md` 갱신, `.env.example` 추가 — 명세: 01 §10
 - [ ] Doc-2 README 보강 (설치, `.env` 위치, 실행 방법, 중계 서버는 로컬 전용)
 - [ ] Doc-3 LICENSE 정리 (GitHub에 LICENSE 있음 → 로컬과 맞추기, `package.json` license 일치)
 - [ ] Doc-4 `TestArea/` 제거

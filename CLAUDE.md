@@ -7,7 +7,7 @@ Node.js(v26, CommonJS) 통합 중계 서버. 방송용 기기·프로그램을 W
 - 비밀 값은 `%LOCALAPPDATA%\VishaSTD\server\.env`(DB 접속 정보, 암호화 키)와 DB `secret_store`(치지직 Client Secret·토큰, 암호화 저장)에 있다. 둘 다 읽지 않는다. 프로젝트 안의 `.env` 계열 파일도 읽지 않는다.
 - 비밀 환경 변수는 `ENV_` 접두사(`ENV_DB_HOST` 등). 값을 묻거나 확인하지 않는다. 새 비밀 값도 `ENV_` 접두사로 이름만 정해 사용자에게 추가를 요청하고, 코드에 하드코딩하지 않는다.
 - 환경 변수 값을 출력하는 명령(`echo`, `printenv`, `console.log(process.env...)` 등)을 실행하지 않는다.
-- 비밀 값이 담긴 객체(요청 헤더, DB 설정, 토큰)를 로그로 출력하는 코드를 넣지 않는다. 연결 테스트는 성공/실패와 에러 코드만 출력한다.
+- 비밀 값이 담긴 값·객체(요청 헤더, DB 설정, 토큰, 치지직 세션 URL, OAuth code)를 로그로 출력하는 코드를 넣지 않는다. 연결 테스트는 성공/실패와 에러 코드만 출력한다.
 - `secret_store`의 실제 비밀 행을 조회·복호화하지 않는다(예외: `tools/secret-selftest.js`의 `selftest_tmp`). `tools/set-secret.js`, `tools/chzzk-check.js`는 사용자만 실행한다.
 
 ## 안전 규칙

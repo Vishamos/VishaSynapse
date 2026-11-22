@@ -20,7 +20,7 @@
 | §5.4, §7 | `Chzzk/ChzzkSession.js` | 보류 (#2) | Chzzk-2 |
 | §4 `SocketPort` | `VishaSynapse/VSServer.js`, `VishaCore.js`, `Data.js`(기본값 4000) | 완료 2026-11-17 | C6 |
 | §4, §5.1 | `Data.js` config(나머지 항목), `VishaCore.js` 시작 순서 | 보류 (#2) | Chzzk-3 |
-| §10 | CLAUDE.md·ARCHITECTURE.md 갱신, `.env.example` | 미착수 | Doc-1 |
+| §10 | CLAUDE.md·ARCHITECTURE.md 갱신 | 완료 2026-11-22 (`.env.example`은 만들지 않음, 사용자 결정) | Doc-1 |
 
 ## 1. 결정 사항 (2026-11-16)
 
@@ -195,3 +195,4 @@
 - Claude는 `secret_store` 테이블을 조회하지 않는다
 - Claude는 `tools/set-secret.js`를 실행하지 않는다
 - 세션 URL·토큰·OAuth code를 로그로 출력하지 않는다
+- `.env.example`은 두지 않는다. `.env`는 사용자가 각 PC에 직접 배치한다 (2026-11-22 사용자 결정. `.env.` 계열 파일은 커밋 훅·권한 규칙이 막는다)
