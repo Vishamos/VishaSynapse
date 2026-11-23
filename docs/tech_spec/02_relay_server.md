@@ -118,8 +118,8 @@
 | 6.4a | 서버는 중계하는 메시지를 변형하지 않는다(`from`도 덮어쓰지 않음). 바이너리 `from`이 보낸 클라이언트의 등록 시그니처와 다르면 그 클라이언트의 연결을 끊는다(종료 코드 1008 `from_mismatch`, 서버 로그 없음). | 확정 | `[Synapse-Message-Relay]`, `[Synapse-Message-Error]` |
 | 6.4b | 바이너리 데이터의 숫자는 리틀 엔디언으로 구성한다. **클라이언트(Vishamos·Face·Body)가 지킬 규칙**이며, 서버는 바이너리를 만들지 않고 1바이트 헤더만 읽어 전달하므로 서버 구현에는 영향이 없다. `docs/protocol/`에 넣는다. | 확정 | `[Synapse-Message]` |
 | 6.4c | 중계하는 JSON의 `from`이 보낸 클라이언트의 등록 시그니처와 다르면 전달하지 않고 400을 돌려준다. | 확정 | `[Synapse-Message-Relay]`. 코드 번호(400)는 노션 반영 대기(plan_review "노션 정리") |
-| 6.5 | 메시지 최대 크기는 64KB(JSON·바이너리 공통). 초당 횟수 한도는 두지 않는다. 길이는 가변이며 서버가 맞추거나 채우지 않는다. | 확정 | `[Synapse-Message-Signature]`. 현재 가장 큰 메시지는 Body 약 1,078바이트 |
-| 6.5a | 프로토콜을 만들 때마다 메시지의 최대 크기와 초당 횟수를 파악해 `docs/protocol/`의 "메시지 용량 표"에 적는다. | 확정 | `[Synapse-Message-Signature]` |
+| 6.5 | 메시지 최대 크기는 64KB(JSON·바이너리 공통). 초당 횟수 한도는 두지 않는다. 길이는 가변이며 서버가 맞추거나 채우지 않는다. | 확정 | `[Synapse-Message-Signature]` |
+| 6.5a | 메시지별 형식·최대 크기·초당 횟수는 서버 문서에 적지 않는다. 보내는 쪽이 자기 사양에 정하고, 받는 쪽은 그 최대 크기 이상의 버퍼를 두고 길이를 확인한다. `docs/protocol/` §8에는 서버 한도(64KB)와 이 규칙만 둔다. | 확정 | `[Synapse-Message-Signature]`. 2026-11-23 사용자 결정으로 "용량 표에 적는다"에서 바뀜, 노션 반영 대기(plan_review "노션 정리") |
 | 6.5b | 64KB를 넘는 메시지를 받으면 연결을 끊는다(종료 코드 1009, `ws`의 `maxPayload`). | 확정 | `[Synapse-Message-Error]` |
 | 6.7 | 서버는 헤더만 확인하고 데이터를 전달한다. | 확정 | `[Synapse-Message]`, `[Synapse-Message-Relay]` |
 | 6.8 | 서버가 처리하는 메시지는 JSON만이다. | 확정 | `[Synapse-Message-Type]` |

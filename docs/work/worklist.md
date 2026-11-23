@@ -4,14 +4,14 @@
 > **다음 할 일:**
 > 1. **실기기 연동 (Face iOS → Synapse → Vishamos)**. 서버 쪽 작업은 끝났고(Relay-1∼3), 남은 것은 클라이언트와 실행 환경이다. 규칙은 `docs/protocol/README.md`(특히 §9 옛 방식에서 바꿀 점).
 >    - 실행 PC에서 `start.bat`으로 서버 실행 성공(2026-11-22). (사용자) 다른 PC에서 접속하려면 실행 PC 방화벽 TCP 4000 인바운드 허용(개인 네트워크)
->    - (사용자, Face iOS 프로젝트) JSON `client.register`(from 22)로 등록, 바이너리 헤더 `[11, 22, 15, …]`, 쓰는 WebSocket 라이브러리의 pong 자동 응답 확인
->    - (Claude, 제안만 함·미착수) `.temp/` 테스트 수신기: 11로 등록해 받은 바이너리의 바이트·초당 횟수 출력. Vishamos를 고치기 전에 Face iOS만 따로 확인하는 용도
->    - (사용자, Vishamos 프로젝트) 11로 JSON 등록, 바이너리 데이터 시작 위치 한 칸 뒤로(`[11, 22, 15, …]`). Body 연동 전에는 수신 버퍼 1KB 확장
+>    - Face iOS → Synapse 연결 완료(2026-11-23, 사용자). 테스트 수신기 `.temp/test-receiver.js` 준비됨: `node .temp/test-receiver.js ws://<실행 PC IP>:4000 11`로 Face 데이터(88B·10회/초 예상) 확인
+>    - 수신기 실측(2026-11-23): Face(22) 250B·30회/초(셋째 바이트 22, 의도한 새 형식), Body(31) 1,092B·21∼23회/초. 둘 다 11로 정상 중계
+>    - (사용자, Vishamos 프로젝트) 11로 JSON 등록, Face 새 형식(Face 사양 기준)으로 해석, 수신 버퍼를 보내는 쪽 최대 크기 이상으로(Body 1,092B > 지금 1KB), 받은 길이 확인 (protocol README §8)
 >    - 클라이언트 3개(Vishamos·Face·Body) 변경을 각 저장소 이슈로 둘지 결정. Body(Vishas_Capture)는 `Protocol/` 대신 `docs/protocol/` 참조로 변경
 > 2. **qa**: 명세 02 기준 `test/` 작성 (C6∼C11, Relay-1∼3 범위). 진행을 막지 않는 보완 질문은 이슈 #5·#6·#7
 > 3. **Relay-4**: 포트 사용 중 처리와 포트 값 검사(이슈 #5의 4)를 명세에 정한 뒤 수정
 > 4. (사용자, 노션) plan_review "노션 정리" 목록. 코드 작업은 막지 않음
-> 5. `docs/protocol/README.md`는 명세 02가 바뀌면 함께 고치고, 새 메시지를 만들 때마다 "메시지 용량 표"에 한 줄씩 추가 (명세 02 §6.5a)
+> 5. `docs/protocol/README.md`는 명세 02가 바뀌면 함께 고친다. 메시지별 크기는 각 클라이언트 사양에 둔다 (명세 02 §6.5a)
 > 6. GitHub 라벨 나머지 생성(만든 것: 작업·제안·보류·치지직·OBS / 남은 제안: 버그·명세보완·기획검토 / 중계서버·DB·Vishamos·Face·Discord / ai-작성 / 사용자검수)
 > 7. (사용자, GitHub 웹) Secret scanning의 Push protection 켜기
 > 8. `docs/specs/` 정리(노션 이전 후 삭제 또는 링크)
