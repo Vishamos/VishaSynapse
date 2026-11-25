@@ -34,7 +34,7 @@ Node.js(v26, CommonJS) 통합 중계 서버. 방송용 기기·프로그램을 W
 | `test/` | 명세 기준 회귀 테스트(qa 작성, 커밋) |
 | `.temp/` | 개발 중 임시 스크립트(git 제외) |
 | `.private/` | 공개하지 않는 보고서(security 결과, git 제외) |
-| `.githooks/` | 커밋 전 검사 훅(제외 파일, JS 문법). `core.hooksPath=.githooks` |
+| `.githooks/` | 커밋 전 검사 훅(제외 파일, 비밀 값 스캔 `scan.js`, JS 문법). GitHub Desktop 커밋에도 적용. `core.hooksPath=.githooks` |
 
 ## 작업 흐름
 작업 흐름은 `visha-common:main-thread`를 따른다. 역할(developer·qa·security)과 공통 절차(status, design-work, git-commit, git-issue, secret-scan)는 `visha-common` 플러그인에 있다.
