@@ -2,7 +2,7 @@
 
 > **현재 진행 (2026-11-25):** **우선순위: 치지직 채팅 → 컨트롤러(41)**(아래 Chzzk 묶음, developer). 그다음 중계 서버 실기기 연동. OBS(#3)·게임컴 입력(#4)은 이슈로 보류.
 > **다음 할 일:**
-> 0. **Chzzk-1∼4** (명세 01 §5·§7, 명세 02 §7.1). 개발 PC에서 먼저 만든다(DB 접속 확인 2026-11-25). 첫 실연동 때 확인: 리디렉션 URL(`localhost`) 허용(명세 01 §6 Q1), `socket.io-client@2.5.0` 호환(Q3, 문서는 2.0.3까지 명시), 구독 `sessionKey` 위치, CHAT 원본 필드
+> 0. **Chzzk 실연동 확인 (사용자, 개발 PC).** Chzzk-1∼4 구현 완료(2026-11-25). `npm start` → 콘솔의 인증 URL을 같은 PC 브라우저로 열어 동의 → `치지직 상태: connected` 확인 → 채팅 한 줄 보내고 1분 건수 로그·컨트롤러(41) 수신 확인. 실패하면 콘솔의 에러 코드를 알려 준다. 확인 대상: 리디렉션 URL 허용(명세 01 §6 Q1), `socket.io-client@2.5.0` 호환(Q3), 구독 `sessionKey` 위치, CHAT 원본 필드, 재시작 후 저장된 토큰으로 바로 접속
 > 1. **실기기 연동 (Face iOS → Synapse → Vishamos)**. 서버 쪽 작업은 끝났고(Relay-1∼3), 남은 것은 클라이언트와 실행 환경이다. 규칙은 `docs/protocol/README.md`(특히 §9 옛 방식에서 바꿀 점).
 >    - 실행 PC에서 `start.bat`으로 서버 실행 성공(2026-11-22). (사용자) 다른 PC에서 접속하려면 실행 PC 방화벽 TCP 4000 인바운드 허용(개인 네트워크)
 >    - Face iOS → Synapse 연결 완료(2026-11-23, 사용자). 테스트 수신기 `.temp/test-receiver.js` 준비됨: `node .temp/test-receiver.js ws://<실행 PC IP>:4000 11`로 Face 데이터(88B·10회/초 예상) 확인
@@ -25,7 +25,7 @@
 - 항목 형식: `- [ ] <번호> <내용> — 기획: [태그] / 명세: <문서 번호> §<절>`
   예: `- [ ] Relay-1 등록 전 error의 to 생략 — 기획: [Synapse-Message-Type] / 명세: 02 §6.10a`
   (근거가 없는 항목은 `기획: 없음(AI 발견 버그)`처럼 표시한다.)
-- 번호는 `영역-번호`(영역 접두어는 plan_review "태그 목록"). 영역 안에서 계속 늘리고 다시 쓰지 않는다. 다음 번호: Relay-5, Chzzk-5, DB-1, OBS-1, Deploy-1, Dep-4, Doc-6. 커밋에 남은 옛 번호(C1∼C11, G1∼G9)는 그대로 둔다.
+- 번호는 `영역-번호`(영역 접두어는 plan_review "태그 목록"). 영역 안에서 계속 늘리고 다시 쓰지 않는다. 다음 번호: Relay-5, Chzzk-6, DB-1, OBS-1, Deploy-1, Dep-4, Doc-6. 커밋에 남은 옛 번호(C1∼C11, G1∼G9)는 그대로 둔다.
 
 ## 사용자 조치 대기
 - [ ] 기획서 초안 검토·수정 (`docs/specs/VishaSynapse_spec.md`). F-2를 공식 API 기준으로 갱신
@@ -42,10 +42,9 @@
 ## Chzzk. 치지직 공식 API 전환 (명세 01, 진행도는 명세 01 "구현 현황")
 > 2026-11-25 보류 해제(#2), 범위: 채팅 수신 → 컨트롤러(41). 후원·Vishamos 전달은 나중. OBS #3, 게임컴 입력 #4(#3 선행)는 계속 보류.
 
-- [ ] Chzzk-1 OAuth 연동: 인증 URL·`state`, 콜백 서버, code → 토큰, 토큰 저장·자동 갱신(Refresh Token 1회용) — 기획: [Synapse-Chzzk] / 명세: 01 §5.2·§5.3
-- [ ] Chzzk-2 세션 소켓: 세션 URL 발급, 접속, 채팅 구독, 무제한 재연결(1→60초), `revoked` 처리 — 기획: [Synapse-Chzzk] / 명세: 01 §5.4
-- [ ] Chzzk-3 config(`Chzzk.CallbackPort`·`RedirectUri`, 빠진 항목 기본값 채움)와 시작 순서(DB → 중계 서버 → 치지직, 치지직이 서버 시작을 막지 않음). `Data.js` 파싱 실패 시 `undefined` 반환도 함께 고침 — 기획: [Synapse-Loop] / 명세: 01 §4·§5.1, 02 §2.3
-- [ ] Chzzk-4 상태(`disabled`·`auth_required`·`disconnected`·`connected`)와 컨트롤러 전달: 시그니처 41 등록 허용, `chzzk.chat`·`chzzk.status`를 41로, 41 등록 직후 현재 상태 1회, 로그는 상태 변화와 1분 건수만 — 기획: [Synapse-Chzzk] / 명세: 01 §5.5·§7, 02 §4·§7.1
+> Chzzk-1∼4 구현 2026-11-25(진행도는 명세 01 "구현 현황"). 실연동 확인은 "다음 할 일" 0번.
+
+- [ ] Chzzk-5 (security 낮음, 제안) `RedirectUri` 호스트가 `localhost`·`127.0.0.1`·`::1`이 아니면 시작 거부(콜백 서버가 LAN에 열리지 않게), state 비교를 `crypto.timingSafeEqual`로, DB 판정 로그 문구를 "DB 연결 실패 또는 TLS 미사용"으로 — 기획: 없음(security 점검) / 명세: 01 §4·§5.2
 
 ## Dep. 의존성·설정
 - [ ] Dep-3 전역 `@google/gemini-cli@0.22.4` 업데이트 또는 삭제

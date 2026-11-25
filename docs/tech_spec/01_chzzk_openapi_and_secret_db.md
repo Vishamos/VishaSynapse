@@ -16,11 +16,11 @@
 | §8 | `socket.io-client@2.5.0` 설치 | 완료 2026-11-16 | G4 |
 | §2 | `Chzzk/ChzzkApi.js`, `tools/chzzk-check.js` | 완료 2026-11-16 (앱 인증 성공) | G5 |
 | §2 삭제 | 비공식 연동 코드 5개 | 완료 2026-11-16 | G9 |
-| §5.2, §5.3 | `Chzzk/ChzzkAuth.js`, `Chzzk/CallbackServer.js` | 진행 2026-11-25 (#2) | Chzzk-1 |
-| §5.4, §7 | `Chzzk/ChzzkSession.js` | 진행 2026-11-25 (#2) | Chzzk-2 |
-| §5.5, §7 | 상태 관리와 컨트롤러(41) 전달, 시그니처 41 | 진행 2026-11-25 | Chzzk-4 |
+| §5.2, §5.3 | `Chzzk/ChzzkAuth.js`, `Chzzk/CallbackServer.js` | 구현 2026-11-25 (가짜 API·저장소로 로컬 확인, 실연동 미확인, security 통과) | Chzzk-1 |
+| §5.4, §7 | `Chzzk/ChzzkSession.js`, `ChzzkApi.userHeaders` | 구현 2026-11-25 (가짜 소켓과 실제 socket.io 실패 경로 확인, 실연동 미확인) | Chzzk-2 |
+| §5.5, §7 | `Chzzk/ChzzkStatus.js`, `VishaSynapse/` VSServerCommand·VSServerData·VSHandler | 구현 2026-11-25 (4998 포트 로컬 동작 확인) | Chzzk-4 |
 | §4 `SocketPort` | `VishaSynapse/VSServer.js`, `VishaCore.js`, `Data.js`(기본값 4000) | 완료 2026-11-17 | C6 |
-| §4, §5.1 | `Data.js` config(나머지 항목), `VishaCore.js` 시작 순서 | 진행 2026-11-25 (#2) | Chzzk-3 |
+| §4, §5.1 | `Data.js` config(나머지 항목), `VishaCore.js` 시작 순서 | 구현 2026-11-25 (VishaCore 미실행) | Chzzk-3 |
 | §10 | CLAUDE.md·ARCHITECTURE.md 갱신 | 완료 2026-11-22 (`.env.example`은 만들지 않음, 사용자 결정) | Doc-1 |
 
 ## 1. 결정 사항 (2026-11-16)
@@ -58,6 +58,7 @@
 | `Chzzk/ChzzkAuth.js` (신규) | 인증 URL 생성, code → 토큰 교환, 토큰 갱신, 토큰 저장·로드 |
 | `Chzzk/CallbackServer.js` (신규) | OAuth 콜백을 받는 로컬 HTTP 서버 |
 | `Chzzk/ChzzkSession.js` (신규) | 세션 URL 발급, 소켓 접속, 채팅 구독, 재연결 |
+| `Chzzk/ChzzkStatus.js` (신규, 2026-11-25) | 상태 값(§5.5), 컨트롤러(41)로 `chzzk.status`·`chzzk.chat` 전송, 1분 건수 로그 |
 | `VishaCore.js` (재구성) | 시작 순서 조립 (5장) |
 | 삭제 | `Chzzk/ChatID.js`, `Chzzk/ChatAT.js`, `Chzzk/ChatSocket.js`, `Chzzk/ChzzkCommand.js`, `Chzzk/ChzzkCommandHandler.js` |
 
@@ -102,12 +103,11 @@
     "ClientId": "",
     "CallbackPort": 4100,
     "RedirectUri": "http://localhost:4100/chzzk/callback"
-  },
-  "Db": {
-    "CaPath": ""
   }
 }
 ```
+- `Db.CaPath`는 두지 않는다(2026-11-25). DB CA 인증서는 `.env`와 같은 폴더의 `db-ca.pem`으로 고정(`VIshaDB/VSDB.js`).
+- `CallbackPort`는 `RedirectUri`의 포트와 같아야 한다. 콜백 서버는 `CallbackPort`로 열고, `RedirectUri`에서는 호스트·경로만 쓴다(해석, 2026-11-25. 다르면 콜백을 받지 못한다).
 - 제거: `ChatAPI.IdHash`, `ChatAPI.ChannelId`. Open API는 토큰의 사용자 채널 이벤트를 구독하므로 채널 ID가 필요 없다.
 - `RedirectUri`는 치지직 앱 등록 때 입력한 값과 **정확히 같아야** 한다.
 - 기존 config.json에 새 항목이 없으면 기본값을 채워 저장하고, 필수 값(`ClientId`)이 비어 있으면 치지직 연동만 건너뛴다.
@@ -152,7 +152,11 @@
 6. `CHAT` 이벤트 → 7장 형식으로 정규화해 컨트롤러(41)로 보낸다
 7. `SYSTEM` `type: revoked` → 권한 철회. 토큰을 지우고 상태 `auth_required`, 5.2로
 8. 연결이 끊기거나 1∼5 중 하나가 실패하면 상태 `disconnected`로 두고 세션 URL을 **새로 발급받아** 1∼5를 다시 한다. 대기 시간은 1초부터 두 배씩 늘려 최대 60초, **횟수 제한 없이** 반복한다(2026-11-25). 연결에 성공하면 대기 시간을 1초로 되돌린다.
-   - 1번 요청이 `401`이면 5.3 갱신을 한 번 하고 다시 시도한다. 갱신이 실패하면 `auth_required`.
+   - 1번 요청이 `401`이면 5.3 갱신을 한 번 하고 다시 시도한다.
+   - 갱신 실패는 둘로 나눈다(해석, 2026-11-25): 치지직이 4xx로 거절하면 토큰을 지우고 `auth_required`. 네트워크·타임아웃·5xx는 일시 실패로 보고 토큰을 유지한 채 `disconnected`로 재시도한다(예약 갱신은 60초 뒤 다시). 일시 장애로 유효한 토큰을 버리지 않기 위해서다.
+   - 접속 후 10초 안에 `subscribed`가 오지 않으면 실패로 보고 재시도한다(해석, 2026-11-25).
+   - `unsubscribed`는 지금 처리하지 않는다(채팅 구독을 스스로 해제하지 않으므로). 실제로 오는 것이 확인되면 재구독을 정한다.
+   - 연결 실패 때는 에러 코드·HTTP 상태와 재시도 대기 시간만 한 줄 로그로 남긴다(진단용, 최대 60초에 한 줄).
 
 이벤트 본문이 JSON 문자열로 한 번 더 감싸져 올 수 있다는 커뮤니티 보고가 있으므로, 문자열이면 한 번 더 파싱한다.
 
