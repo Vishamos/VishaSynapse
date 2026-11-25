@@ -57,4 +57,9 @@ function clientHeaders(clientId, clientSecret) {
     return { 'Client-Id': clientId, 'Client-Secret': clientSecret };
 }
 
-module.exports = { request, clientHeaders };
+// 유저 인증 헤더 (OAuth Access Token)
+function userHeaders(accessToken) {
+    return { Authorization: `Bearer ${accessToken}` };
+}
+
+module.exports = { request, clientHeaders, userHeaders };
