@@ -5,6 +5,7 @@ const Signature = Object.freeze({
     FACE_ANDROID: 21,
     FACE_IOS: 22,
     BODY: 31,
+    CONTROLLER: 41,
     CHZZK: 101,
     DISCORD: 111,
     OBS: 121,
@@ -21,6 +22,9 @@ const MessageType = Object.freeze({
     CLIENT_REGISTER: 'client.register',
     CLIENT_REGISTERED: 'client.registered',
     ERROR: 'error',
+    // 치지직 → 컨트롤러(41) (명세 01 §7)
+    CHZZK_CHAT: 'chzzk.chat',
+    CHZZK_STATUS: 'chzzk.status',
 });
 
 // 에러 메시지 (§6.12). 연결은 유지한다.

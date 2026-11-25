@@ -8,7 +8,7 @@ const {
     CloseCode,
     ClientStatus,
 } = require('./VSServerCommand');
-const { NextConnectionIndex, AddRegistered, GetTargets } = require('./VSServerData');
+const { serverEvents, NextConnectionIndex, AddRegistered, GetTargets } = require('./VSServerData');
 
 // 바이너리 헤더 [to, from] (명세 02 §6.4)
 const BINARY_TO = 0;
@@ -24,10 +24,16 @@ function IsOpen(client) {
 }
 
 // 서버가 보내는 JSON에도 type을 붙인다 (§6.2c). 등록 전이면 to 키를 넣지 않는다 (§6.10a).
-function SendJson(client, type, data) {
+// from은 직접 관리 요소의 이벤트일 때만 그 요소의 시그니처로 준다 (§6.0)
+function SendJson(client, type, data, from = Signature.SERVER) {
     if (!IsOpen(client)) return;
     const header = client.signature === null ? {} : { to: client.signature };
-    client.socket.send(JSON.stringify({ ...header, from: Signature.SERVER, type, data }));
+    client.socket.send(JSON.stringify({ ...header, from, type, data }));
+}
+
+// 직접 관리 요소의 이벤트를 목적지로 등록된 클라이언트 모두에게 보낸다. 없으면 버린다 (명세 01 §7)
+function SendEvent(to, from, type, data) {
+    for (const target of GetTargets(to)) SendJson(target, type, data, from);
 }
 
 function SendError(client, error) {
@@ -71,6 +77,7 @@ function Register(client, message) {
     AddRegistered(client);
     SendJson(client, MessageType.CLIENT_REGISTERED, { index: client.index });
     console.log(`${ClientLabel(client)} 등록됨`);
+    serverEvents.emit('registered', client);
 }
 
 function HandleText(client, data) {
@@ -92,7 +99,7 @@ function HandleText(client, data) {
         SendError(client, ErrorCode.NOT_FOUND);
         return;
     }
-    // 서버 시그니처: 모르는 type, 보류 요소(101·111·121)는 501 (§6.12, §7.0)
+    // 서버 시그니처: 모르는 type, 보류 요소(111·121), 받을 명령이 없는 치지직(101)은 501 (§6.12, §7.0, §7.1.6)
     if (SERVER_SIGNATURES.has(message.to)) {
         SendError(client, ErrorCode.NOT_IMPLEMENTED);
         return;
@@ -138,4 +145,4 @@ function HandleMessage(client, data, isBinary) {
     }
 }
 
-module.exports = { HandleMessage, ClientLabel };
+module.exports = { HandleMessage, ClientLabel, SendJson, SendEvent };
