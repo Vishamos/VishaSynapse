@@ -46,7 +46,7 @@ Node.js(v26, CommonJS) 통합 중계 서버. 방송용 기기·프로그램을 W
 | `qa-test` | qa의 테스트 도구·위치·실행 명령, 시나리오 로그 위치 |
 
 - **push는 사용자가 GitHub Desktop으로 한다.** 공개 저장소다.
-- **security 실행 조건:** 변경이 다음 중 하나에 해당하면 커밋 전에 `security` 에이전트를 부른다.
+- **security 실행 조건:** 변경이 다음 중 하나에 해당하면 메인 스레드가 `security` 에이전트를 부른다. 메인 스레드가 커밋할 때는 커밋 전에 부른다. developer가 해당 변경을 커밋했으면(developer는 security를 부를 수 없다) 메인 스레드가 완료 보고를 받은 뒤 push 전에 부른다.
   - 파일: `VIshaDB/`, `Secret/`, `Env.js`, `tools/`, `CLAUDE.md`(비밀 값·안전 규칙 절), `.claude/settings.json`, `.githooks/`, `.gitignore`, `package.json`(의존성)
   - 내용: 외부 통신 코드(`fetch`, `https`, 새 소켓 연결) 추가, 객체를 통째로 로그에 쓰는 코드 추가
 - 노션은 `VishaSTD / VishaSynapse`와 하위 `[Synapse-…]` 페이지만 본다.
