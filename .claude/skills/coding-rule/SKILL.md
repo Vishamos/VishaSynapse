@@ -1,9 +1,11 @@
 ---
-name: node-coding-rule
-description: VishaSynapse Node.js 코드 작성 표준. JS 코드를 작성·수정·리뷰할 때 적용한다 (CommonJS, 에러 처리, 비밀 값 참조, 로그 규칙, ws·mysql2 사용법, 바이너리 파싱 안전 규칙).
+name: coding-rule
+description: VishaSynapse Node.js 코드 작성 표준. JS 코드를 작성·수정·리뷰할 때 visha-common:coding-common-rule과 함께 적용한다 (CommonJS, 에러 처리, 비밀 값 참조, 로그 규칙, ws·mysql2 사용법, 바이너리 파싱 안전 규칙, 의존성 점검 명령).
 ---
 
 # VishaSynapse Node.js 코딩 표준
+
+공통 원칙(가정 드러내기, 단순하게, 필요한 곳만 고치기)은 `visha-common:coding-common-rule`을 따른다. 이 스킬은 Node.js와 이 프로젝트에만 해당하는 규칙이다.
 
 ## 런타임과 의존성
 - Node.js 26, CommonJS(`require` / `module.exports`). ESM 전환은 별도 결정 전까지 하지 않는다.
@@ -11,7 +13,8 @@ description: VishaSynapse Node.js 코드 작성 표준. JS 코드를 작성·수
   - `.env` 로드: `process.loadEnvFile(경로)` (dotenv 불필요)
   - 테스트: `node:test`, `node:assert/strict`
   - HTTP 요청: `https` 또는 전역 `fetch`
-- 새 의존성 추가는 사용자 승인이 필요하다.
+- 새 의존성 추가는 사용자 승인이 필요하고, 설치는 `--ignore-scripts`를 붙인다.
+- **의존성 점검 명령** (security가 사용): `npm audit` (조회만, `npm audit fix` 금지). 설치 스크립트(`preinstall`/`install`/`postinstall`)가 있는 패키지도 확인한다.
 
 ## 비밀 값
 - `process.env.ENV_*` 이름으로만 참조한다. 기본값(`|| '...'`)에 실제 값을 넣지 않는다.
@@ -32,7 +35,6 @@ description: VishaSynapse Node.js 코드 작성 표준. JS 코드를 작성·수
 ## 모듈 구조
 - `require` 시점에 부수효과(연결, 쿼리, 서버 기동, 타이머 시작)를 만들지 않는다. 함수로 export하고 진입점(`VishaCore.js`)에서 호출한다.
 - **세미콜론을 생략하지 않는다.** 줄이 `(`나 `[`로 시작하면 앞 줄과 합쳐져 해석된다. (`VishaCore.js`의 `require('mysql2')` 다음 줄 `(async () => ...)()` 사고)
-- 내 변경으로 안 쓰이게 된 `require`·변수·함수는 지운다. 원래 있던 죽은 코드(주석 처리된 예전 코드 등)는 내가 고치는 함수 안에서만 지우고, 그 밖은 보고만 한다.
 - 같은 모듈을 두 번 `require`하지 않고 한 줄에서 구조 분해한다.
 
 ## ws (v8)

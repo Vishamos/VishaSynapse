@@ -1,7 +1,7 @@
 # VishaSynapse
 
 Node.js(v26, CommonJS) 통합 중계 서버. 방송용 기기·프로그램을 WebSocket으로 잇는 "중추"이며, 통신 규칙(프로토콜)의 기준이다.
-이 파일은 **지도와 안전 규칙**만 담는다. 프로젝트 지식은 `docs/`, 절차는 스킬, 역할은 에이전트 정의에 있다.
+이 파일은 **지도와 안전 규칙**만 담는다. 프로젝트 지식은 `docs/`, 절차는 스킬, 역할은 `visha-common` 플러그인의 에이전트 정의에 있다.
 
 ## 비밀 값 취급 (반드시 지킬 것)
 - 비밀 값은 `%LOCALAPPDATA%\VishaSTD\server\.env`(DB 접속 정보, 암호화 키)와 DB `secret_store`(치지직 Client Secret·토큰, 암호화 저장)에 있다. 둘 다 읽지 않는다. 프로젝트 안의 `.env` 계열 파일도 읽지 않는다.
@@ -27,17 +27,28 @@ Node.js(v26, CommonJS) 통합 중계 서버. 방송용 기기·프로그램을 W
 | `docs/tech_spec/` | 기술 명세(구현 기준)와 명세별 "구현 현황" |
 | `docs/ARCHITECTURE.md` | 모듈 구조 |
 | `docs/work/worklist.md` | 남은 작업과 현재 진행 |
-| `docs/work/plan_review.md` | 노션에 반영할 기획 질문 |
+| `docs/work/plan_review.md` | 노션에 적을 것, 대화로 결정한 것, 보류 |
+| `docs/protocol/README.md` | 클라이언트용 통신 규칙(명세 02에서 옮김. 명세 02가 바뀌면 함께 고친다) |
+| `docs/qa/` | qa 사용자 시나리오 |
 | `docs/specs/` | 이전 기획서 초안(읽기 전용, 정리 예정) |
 | `test/` | 명세 기준 회귀 테스트(qa 작성, 커밋) |
 | `.temp/` | 개발 중 임시 스크립트(git 제외) |
-| `.githooks/` | 커밋 전 검사 훅 |
+| `.private/` | 공개하지 않는 보고서(security 결과, git 제외) |
+| `.githooks/` | 커밋 전 검사 훅(제외 파일, JS 문법). `core.hooksPath=.githooks` |
 
-| 역할 | 맡는 일 | 쓰는 스킬 |
-|---|---|---|
-| 메인 세션 | 사용자와 논의, 작은 수정, worklist·plan_review·이슈·커밋 관리 | `vs-plan-intake`, `vs-status`, `vs-git` |
-| `developer` | worklist의 큰 수정 | `developer-workflow`, `node-coding-rule` |
-| `qa` | worklist 묶음이 끝났을 때 또는 요청 시, 명세 기준 테스트 | `qa-workflow` |
-| `security` | 실행 조건(`vs-git` 참조)에 해당하거나 요청 시, 보안 점검 | `secret-scan` |
+## 작업 흐름
+작업 흐름은 `visha-common:main-thread`를 따른다. 역할(developer·qa·security)과 공통 절차(status, design-work, git-commit, git-issue, secret-scan)는 `visha-common` 플러그인에 있다.
 
-문서·주석은 한국어로 쓴다. 예전 이름(예: `dev-workflow`, `vs-issue`)으로 불리면 지금 이름을 알려 준다.
+| 프로젝트 스킬 | 내용 |
+|---|---|
+| `coding-rule` | Node.js 코딩 표준, 의존성 점검 명령(`npm audit`) |
+| `simple-test` | developer의 최소 실행 테스트(문법, 로드, 로컬 기동 47125 포트, `.temp/` 동작 확인) |
+| `qa-test` | qa의 테스트 도구·위치·실행 명령, 시나리오 로그 위치 |
+
+- **push는 사용자가 GitHub Desktop으로 한다.** 공개 저장소다.
+- **security 실행 조건:** 변경이 다음 중 하나에 해당하면 커밋 전에 `security` 에이전트를 부른다.
+  - 파일: `VIshaDB/`, `Secret/`, `Env.js`, `tools/`, `CLAUDE.md`(비밀 값·안전 규칙 절), `.claude/settings.json`, `.githooks/`, `.gitignore`, `package.json`(의존성)
+  - 내용: 외부 통신 코드(`fetch`, `https`, 새 소켓 연결) 추가, 객체를 통째로 로그에 쓰는 코드 추가
+- 노션은 `VishaSTD / VishaSynapse`와 하위 `[Synapse-…]` 페이지만 본다.
+
+문서·주석은 한국어로 쓴다(GitHub 이슈는 영어, `visha-common:git-issue`). 예전 이름으로 불리면 지금 이름을 알려 준다: `vs-status` → `visha-common:status`, `vs-plan-intake` → `visha-common:design-work`, `vs-git` → `visha-common:git-commit`·`git-issue`, `developer-workflow` → `simple-test`, `qa-workflow` → `qa-test`, `node-coding-rule` → `coding-rule`.
