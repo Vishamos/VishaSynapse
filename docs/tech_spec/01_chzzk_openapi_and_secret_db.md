@@ -1,7 +1,7 @@
 # 01. 치지직 공식 Open API 전환과 비밀 값 DB 저장
 
 - 작성: 2026-11-16
-- 상태: 일부 구현 후 보류. 2026-11-16 기준 비밀 값 DB 저장(3장)과 Open API 요청 공통부·앱 인증 확인(`tools/chzzk-check.js`)까지 구현. OAuth 연동·세션 소켓(5.2∼5.4)은 중계 서버 작업 이후로 미룸
+- 상태: 2026-11-25 보류 해제, 범위를 **채팅 수신 → 컨트롤러(41) 전달**로 좁혀 진행(사용자 결정, 노션 반영 대기: plan_review "노션 정리"). 2026-11-16에 비밀 값 DB 저장(3장)과 Open API 요청 공통부·앱 인증 확인까지 구현됨
 - 관련 기획: `docs/specs/VishaSynapse_spec.md` F-2(치지직), F-5(DB)
 - 근거 문서: CHZZK Open API (https://chzzk.gitbook.io/chzzk) — Authorization, Session, Chat, Tips
 
@@ -16,10 +16,11 @@
 | §8 | `socket.io-client@2.5.0` 설치 | 완료 2026-11-16 | G4 |
 | §2 | `Chzzk/ChzzkApi.js`, `tools/chzzk-check.js` | 완료 2026-11-16 (앱 인증 성공) | G5 |
 | §2 삭제 | 비공식 연동 코드 5개 | 완료 2026-11-16 | G9 |
-| §5.2, §5.3 | `Chzzk/ChzzkAuth.js`, `Chzzk/CallbackServer.js` | 보류 (중계 서버 우선, #2) | Chzzk-1 |
-| §5.4, §7 | `Chzzk/ChzzkSession.js` | 보류 (#2) | Chzzk-2 |
+| §5.2, §5.3 | `Chzzk/ChzzkAuth.js`, `Chzzk/CallbackServer.js` | 진행 2026-11-25 (#2) | Chzzk-1 |
+| §5.4, §7 | `Chzzk/ChzzkSession.js` | 진행 2026-11-25 (#2) | Chzzk-2 |
+| §5.5, §7 | 상태 관리와 컨트롤러(41) 전달, 시그니처 41 | 진행 2026-11-25 | Chzzk-4 |
 | §4 `SocketPort` | `VishaSynapse/VSServer.js`, `VishaCore.js`, `Data.js`(기본값 4000) | 완료 2026-11-17 | C6 |
-| §4, §5.1 | `Data.js` config(나머지 항목), `VishaCore.js` 시작 순서 | 보류 (#2) | Chzzk-3 |
+| §4, §5.1 | `Data.js` config(나머지 항목), `VishaCore.js` 시작 순서 | 진행 2026-11-25 (#2) | Chzzk-3 |
 | §10 | CLAUDE.md·ARCHITECTURE.md 갱신 | 완료 2026-11-22 (`.env.example`은 만들지 않음, 사용자 결정) | Doc-1 |
 
 ## 1. 결정 사항 (2026-11-16)
@@ -27,8 +28,9 @@
 | 항목 | 결정 |
 |---|---|
 | 치지직 연동 방식 | 비공식(네이버 로그인 쿠키) → **공식 Open API** |
-| 기능 범위 | **채팅 수신, 후원 수신**. 구독 알림·채팅 송신은 제외 |
-| 요청 권한(scope) | `채팅 메시지 조회`, `후원 조회` |
+| 기능 범위 | **채팅 수신**(2026-11-25 변경). 후원 수신은 나중. 구독 알림·채팅 송신은 제외 |
+| 요청 권한(scope) | `채팅 메시지 조회`, `후원 조회` (후원 권한은 나중을 위해 그대로 둔다) |
+| 전달 대상 | 컨트롤러(41)에 JSON으로 (2026-11-25, §7) |
 | 이벤트 소켓 | `socket.io-client@2.5.0` (정확한 버전 고정) |
 | 비밀 값 저장 | MariaDB `secret_store` 테이블에 AES-256-GCM으로 암호화해 저장 |
 | `.env`에 남는 값 | DB 접속 정보, 암호화 키(`ENV_SECRET_KEY`)만 |
@@ -40,7 +42,7 @@
 ```
 [치지직 Open API] ──HTTPS──> ChzzkApi ─┬─ ChzzkAuth (토큰 발급·갱신) ──> SecretStore ──TLS──> [MariaDB: secret_store]
                                        └─ ChzzkSession (세션 URL)
-[치지직 세션 서버] ──Socket.IO──> ChzzkSession ──> 이벤트 정규화 ──> (전달 대상: 기획 미정, 우선 로그)
+[치지직 세션 서버] ──Socket.IO──> ChzzkSession ──> 이벤트 정규화 ──> 중계 서버 ──JSON──> 컨트롤러(41)
 [브라우저] ──OAuth 콜백──> CallbackServer (로컬 HTTP) ──> ChzzkAuth
 ```
 
@@ -55,7 +57,7 @@
 | `Chzzk/ChzzkApi.js` (신규) | Open API 요청 공통부. 기본 주소, 인증 헤더, 응답 래퍼(`code`/`content`) 처리, 타임아웃, 에러 코드 |
 | `Chzzk/ChzzkAuth.js` (신규) | 인증 URL 생성, code → 토큰 교환, 토큰 갱신, 토큰 저장·로드 |
 | `Chzzk/CallbackServer.js` (신규) | OAuth 콜백을 받는 로컬 HTTP 서버 |
-| `Chzzk/ChzzkSession.js` (신규) | 세션 URL 발급, 소켓 접속, 채팅·후원 구독, 재연결 |
+| `Chzzk/ChzzkSession.js` (신규) | 세션 URL 발급, 소켓 접속, 채팅 구독, 재연결 |
 | `VishaCore.js` (재구성) | 시작 순서 조립 (5장) |
 | 삭제 | `Chzzk/ChatID.js`, `Chzzk/ChatAT.js`, `Chzzk/ChatSocket.js`, `Chzzk/ChzzkCommand.js`, `Chzzk/ChzzkCommandHandler.js` |
 
@@ -133,6 +135,7 @@
 
 ### 5.3 토큰 갱신
 - Access Token 유효기간 1일, Refresh Token 30일, **Refresh Token은 1회용**.
+- `expiresAt` = 받은 시각 + `Number(expiresIn)` × 1000. 응답의 `expiresIn`은 초 단위 문자열이다(예: `"86400"`).
 - 갱신 시점: `expiresAt` 1시간 전, 또는 API가 `401 INVALID_TOKEN`을 반환했을 때.
 - 순서: `POST /auth/v1/token` (`grantType: refresh_token`) → **새 토큰을 DB에 먼저 저장** → 그다음 새 Access Token 사용.
   - 저장에 실패하면 새 Refresh Token을 잃게 되므로 3회 재시도하고, 그래도 실패하면 치지직 연동을 멈추고 재연동 필요를 알린다.
@@ -143,13 +146,28 @@
 1. `GET /open/v1/sessions/auth` (Bearer) → 세션 URL
 2. `socket.io-client`로 접속: `transports: ['websocket']`, `reconnection: false`, `forceNew: true`, 접속 제한 3초
 3. `SYSTEM` 메시지 `type: connected` → `data.sessionKey` 획득
-4. `POST /open/v1/sessions/events/subscribe/chat`, `.../subscribe/donation` (body: `sessionKey`)
-5. `SYSTEM` `type: subscribed` 두 건 확인 → 수신 시작
-6. `CHAT`, `DONATION` 이벤트 → 7장 형식으로 정규화
-7. `SYSTEM` `type: revoked` → 권한 철회. 토큰을 지우고 재연동 안내
-8. 연결이 끊기면 세션 URL을 **새로 발급받아** 1∼5를 다시 한다. 대기 시간은 1초부터 두 배씩 늘려 최대 60초.
+4. `POST /open/v1/sessions/events/subscribe/chat`, `sessionKey`는 쿼리 문자열(`?sessionKey=`)로 보낸다. 문서 표기가 "Request Param"이라 위치가 명시되지 않았으므로 첫 연동 때 확인한다. 후원 구독은 나중
+   - 세션 URL과 `sessionKey`도 로그 금지(3.4). 유저 세션은 최대 3개 연결이므로 재접속 전에 이전 소켓을 반드시 닫는다
+5. `SYSTEM` `type: subscribed` 확인 → 수신 시작, 상태 `connected`
+6. `CHAT` 이벤트 → 7장 형식으로 정규화해 컨트롤러(41)로 보낸다
+7. `SYSTEM` `type: revoked` → 권한 철회. 토큰을 지우고 상태 `auth_required`, 5.2로
+8. 연결이 끊기거나 1∼5 중 하나가 실패하면 상태 `disconnected`로 두고 세션 URL을 **새로 발급받아** 1∼5를 다시 한다. 대기 시간은 1초부터 두 배씩 늘려 최대 60초, **횟수 제한 없이** 반복한다(2026-11-25). 연결에 성공하면 대기 시간을 1초로 되돌린다.
+   - 1번 요청이 `401`이면 5.3 갱신을 한 번 하고 다시 시도한다. 갱신이 실패하면 `auth_required`.
 
 이벤트 본문이 JSON 문자열로 한 번 더 감싸져 올 수 있다는 커뮤니티 보고가 있으므로, 문자열이면 한 번 더 파싱한다.
+
+### 5.5 상태 (2026-11-25)
+치지직 연동 상태를 하나의 값으로 관리하고, 바뀔 때마다 컨트롤러(41)에 `chzzk.status`로 알린다(§7). 같은 값으로 바뀌면 보내지 않는다.
+
+| 상태 | 언제 |
+|---|---|
+| `disabled` | 치지직 연동을 하지 않음: config `Chzzk.ClientId`가 비었음, 시작 시 DB 연결 실패, Client Secret이 없음 |
+| `auth_required` | 토큰이 없음, 갱신 실패, 권한 철회(`revoked`). 콘솔에 인증 URL을 출력하고 콜백을 기다린다 |
+| `disconnected` | 토큰은 있고 세션 접속·재접속을 시도하는 중 (시작 직후 포함) |
+| `connected` | 채팅 구독 완료(5.4의 5) |
+
+- 컨트롤러가 등록하면(`client.registered`를 보낸 직후) 지금 상태를 그 컨트롤러에게 한 번 보낸다. 컨트롤러가 나중에 접속해도 상태를 알 수 있게 하기 위해서다.
+- 로그: 상태가 바뀔 때 한 줄(`치지직 상태: connected` 등). 채팅은 내용·닉네임을 쓰지 않고, 1분마다 받은 건수만 한 줄 쓴다(받은 것이 있을 때만).
 
 ## 6. 확인 필요
 
@@ -159,19 +177,31 @@
 | Q2 | 앱 등록 위치와 승인 절차 | 치지직 개발자 센터 |
 | Q3 | `socket.io-client@2.5.0`이 실제 세션 서버와 호환되는지 (문서는 2.0.3까지 명시) | 첫 접속 테스트. 안 되면 재논의 (2.0.3은 치명 취약점 3건) |
 | Q4 | 세션 URL 유효 시간 | 문서에 없음. 발급 즉시 접속하도록 구현 |
-| Q5 | 수신한 채팅·후원을 어디로 전달할지 | 기획서 F-2. 정해지기 전까지는 로그만 남김 |
 | Q6 | 실행 PC에서 인증 브라우저를 여는지 | Q1과 함께 결정 |
 
-## 7. 내부 이벤트 형식
+## 7. 컨트롤러(41)로 보내는 메시지 (2026-11-25)
 
-```js
-// 채팅
-{ type: 'chat', channelId, senderChannelId, nickname, role, content, emojis, time }
-// 후원
-{ type: 'donation', channelId, donatorChannelId, nickname, amount, text, donationType, emojis }
+중계 서버의 JSON 형식(명세 02 §6.2)으로 보낸다. `from`은 101(치지직 시그니처), `to`는 41. 41로 등록된 클라이언트 **모두**에게 보내고, 없으면 버린다(쌓아 두지 않음, 에러 없음). 클라이언트용 설명은 `docs/protocol/README.md` §5a.
+
+```json
+{"to":41,"from":101,"type":"chzzk.chat","data":{"nickname":"…","role":"…","content":"…","emojis":{},"time":1764000000000}}
+{"to":41,"from":101,"type":"chzzk.status","data":{"state":"connected"}}
 ```
-- `amount`는 숫자로 변환 (API는 문자열로 줌)
-- 전달 대상이 정해지면(Q5) 이 형식을 중계 서버 바이너리 프로토콜로 바꾸는 부분만 추가한다.
+
+`chzzk.chat`의 `data`는 치지직 `CHAT` 이벤트에서 다음만 옮긴다.
+
+| 키 | 치지직 원본 | 처리 |
+|---|---|---|
+| `nickname` | `profile.nickname` | 문자열. 없으면 `""` |
+| `role` | `userRoleCode` (최상위, `profile` 아래가 아님) | 문자열 그대로: `streamer`, `common_user`, `streaming_channel_manager`, `streaming_chat_manager`. 없으면 `""` |
+| `content` | `content` | 문자열 그대로 |
+| `emojis` | `emojis` | 객체 그대로. 없으면 `{}` |
+| `time` | `messageTime` | 정수(Unix 밀리초). 없으면 서버가 받은 시각 |
+
+- 채널 ID(`channelId`, `senderChannelId`)는 보내지 않는다(쓸 곳이 없고 개인정보 위험, plan_review Q11).
+- 원본 필드 이름은 공식 문서(Session 페이지, 2026-11-25 확인) 기준이며, 첫 연동 때 실제 이벤트로 확인한다. 다르면 이 표를 고친다. 이벤트 원본은 로그로 남기지 않는다.
+- 형식이 맞지 않는 이벤트(필수 `content`가 문자열이 아님 등)는 버리고 에러 코드만 로그로 남긴다.
+- 후원(`donation`)은 나중. 추가할 때 `chzzk.donation`으로 같은 방식을 쓴다(`amount`는 숫자로 변환).
 
 ## 8. 의존성
 
