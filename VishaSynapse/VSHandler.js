@@ -9,6 +9,9 @@ const {
     ClientStatus,
 } = require('./VSServerCommand');
 const { serverEvents, NextConnectionIndex, AddRegistered, GetTargets } = require('./VSServerData');
+const { Log, LogCode } = require('./VSLog');
+
+const ERROR_LOG_INTERVAL_MS = 10 * 1000; // 같은 클라이언트·같은 코드의 CLIENT_ERROR_SENT 간격 (명세 02 §6.13.8)
 
 // 바이너리 헤더 [to, from] (명세 02 §6.4)
 const BINARY_TO = 0;
@@ -39,8 +42,23 @@ function SendEvent(to, from, type, data) {
     for (const target of GetTargets(to)) SendJson(target, type, data, from);
 }
 
+// 10초 안에 다시 나온 같은 코드는 세기만 하고, 다음 로그 message에 그 건수를 붙인다 (§6.13.8)
+function LogErrorSent(client, error) {
+    const now = Date.now();
+    const last = client.errorLogs.get(error.code);
+    if (last && now - last.at < ERROR_LOG_INTERVAL_MS) {
+        last.skipped += 1;
+        return;
+    }
+    const more = last && last.skipped > 0 ? ` (앞 로그 뒤 ${last.skipped}건 더)` : '';
+    client.errorLogs.set(error.code, { at: now, skipped: 0 });
+    Log.Warn(LogCode.CLIENT_ERROR_SENT, `${ClientLabel(client)}에게 error ${error.code} ${error.message} 보냄${more}`);
+}
+
 function SendError(client, error) {
+    if (!IsOpen(client)) return;
     SendJson(client, MessageType.ERROR, { code: error.code, message: error.message });
+    LogErrorSent(client, error);
 }
 
 // 헤더 형식 검사 (§6.2, §6.2a, §6.2b). 키는 소문자만 읽으므로 대문자 키는 누락으로 본다.
@@ -65,7 +83,7 @@ function IsKnownSignature(value) {
 // 등록 (§5.5a~5.5d, §5.5f)
 function Register(client, message) {
     if (client.status !== ClientStatus.CONNECTING) {
-        console.log(`${ClientLabel(client)}: 이미 등록됨, 재등록 요청 무시`);
+        Log.Warn(LogCode.CLIENT_REREGISTER_IGNORED, `${ClientLabel(client)}: 이미 등록됨, 재등록 요청 무시`);
         return;
     }
     if (!CLIENT_SIGNATURES.has(message.from)) {
@@ -79,7 +97,7 @@ function Register(client, message) {
     client.status = ClientStatus.CONNECTED;
     AddRegistered(client);
     SendJson(client, MessageType.CLIENT_REGISTERED, { index: client.index });
-    console.log(`${ClientLabel(client)} 등록됨`);
+    Log.Info(LogCode.CLIENT_REGISTERED, `${ClientLabel(client)} 등록됨`);
     serverEvents.emit('registered', client);
 }
 

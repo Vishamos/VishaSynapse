@@ -1,6 +1,7 @@
 const { Signature, MessageType } = require('../VishaSynapse/VSServerCommand');
 const { serverEvents } = require('../VishaSynapse/VSServerData');
 const { SendJson, SendEvent } = require('../VishaSynapse/VSHandler');
+const { Log, LogCode } = require('../VishaSynapse/VSLog');
 
 // 치지직 연동 상태 (명세 01 §5.5)
 const ChzzkState = Object.freeze({
@@ -24,7 +25,7 @@ function GetState() {
 function SetState(next) {
     if (next === state) return;
     state = next;
-    console.log(`치지직 상태: ${state}`);
+    Log.Info(LogCode.CHZZK_STATUS, `치지직 상태: ${state}`);
     SendEvent(Signature.CONTROLLER, Signature.CHZZK, MessageType.CHZZK_STATUS, { state });
 }
 
@@ -36,7 +37,7 @@ function ForwardChat(data) {
 
 function LogChatCount() {
     if (chatCount === 0) return;
-    console.log(`치지직 채팅 수신: ${chatCount}건 (1분)`);
+    Log.Info(LogCode.CHZZK_CHAT_COUNT, `치지직 채팅 수신: ${chatCount}건 (1분)`);
     chatCount = 0;
 }
 

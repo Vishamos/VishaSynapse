@@ -24,6 +24,8 @@ const MessageType = Object.freeze({
     ERROR: 'error',
     // 컨트롤러(41) → 서버 정상 종료 (§2.6b)
     SERVER_SHUTDOWN: 'server.shutdown',
+    // 서버 → 컨트롤러(41) 서버 로그 (§6.13)
+    LOG: 'log',
     // 치지직 → 컨트롤러(41) (명세 01 §7)
     CHZZK_CHAT: 'chzzk.chat',
     CHZZK_STATUS: 'chzzk.status',

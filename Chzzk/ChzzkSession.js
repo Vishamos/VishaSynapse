@@ -2,6 +2,7 @@ const SocketIo = require('socket.io-client');
 const ChzzkApi = require('./ChzzkApi');
 const { Describe } = require('./ChzzkAuth');
 const { ChzzkState } = require('./ChzzkStatus');
+const { Log, LogCode } = require('../VishaSynapse/VSLog');
 
 // 치지직 세션: 세션 URL 발급, 소켓 접속, 채팅 구독, 재연결 (명세 01 §5.4)
 // 세션 URL·sessionKey·이벤트 원본은 로그로 남기지 않는다 (§3.4, §7).
@@ -94,7 +95,7 @@ function CreateSession({
         }
         const delay = RetryDelay(attempt);
         attempt += 1;
-        console.error(`치지직 세션 실패: ${Describe(err)}. ${delay / 1000}초 뒤 재시도`);
+        Log.Warn(LogCode.CHZZK_SESSION_RETRY, `치지직 세션 실패: ${Describe(err)}. ${delay / 1000}초 뒤 재시도`);
         setState(ChzzkState.DISCONNECTED);
         retryTimer = setTimeout(() => {
             retryTimer = null;
@@ -144,7 +145,7 @@ function CreateSession({
             setState(ChzzkState.CONNECTED);
         } else if (message.type === 'revoked') {
             // 권한 철회: 토큰을 지우고 재연동 (§5.4-7)
-            console.error('치지직 권한 철회: CHZZK_REVOKED');
+            Log.Error(LogCode.CHZZK_REVOKED, '치지직 권한 철회: CHZZK_REVOKED');
             Stop();
             auth.ClearToken();
             onAuthRequired();
@@ -154,7 +155,7 @@ function CreateSession({
     function OnChat(raw) {
         const data = NormalizeChat(raw);
         if (!data) {
-            console.error('치지직 채팅 형식 오류: CHZZK_CHAT_INVALID');
+            Log.Warn(LogCode.CHZZK_CHAT_INVALID, '치지직 채팅 형식 오류: CHZZK_CHAT_INVALID');
             return;
         }
         onChat(data);

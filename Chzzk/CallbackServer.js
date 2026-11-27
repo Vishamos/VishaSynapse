@@ -1,4 +1,5 @@
 const http = require('http');
+const { Log, LogCode } = require('../VishaSynapse/VSLog');
 
 // OAuth 콜백을 받는 로컬 HTTP 서버 (명세 01 §5.2)
 // 쿼리(code·state)는 로그로 출력하지 않는다. 브라우저에는 결과 문구만 보여 준다.
@@ -27,15 +28,15 @@ function StartCallbackServer({ host, port, path, onCallback }) {
                 error: url.searchParams.get('error'),
             });
         } catch (err) {
-            console.error(`치지직 콜백 처리 오류: ${err.code || err.name}`);
+            Log.Error(LogCode.CHZZK_CALLBACK_FAILED, `치지직 콜백 처리 오류: ${err.code || err.name}`);
         }
         Reply(res, ok ? 200 : 400, ok ? TEXT_SUCCESS : TEXT_FAILURE);
     });
     server.on('error', (err) => {
-        console.error(`치지직 콜백 서버 오류: ${err.code || err.name}`);
+        Log.Error(LogCode.CHZZK_CALLBACK_FAILED, `치지직 콜백 서버 오류: ${err.code || err.name}`);
     });
     server.on('listening', () => {
-        console.log(`치지직 콜백 서버 대기: ${port}포트`);
+        Log.Info(LogCode.CHZZK_CALLBACK_READY, `치지직 콜백 서버 대기: ${port}포트`);
     });
     server.listen(port, host);
     return {

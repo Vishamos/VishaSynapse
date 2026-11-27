@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const ChzzkApi = require('./ChzzkApi');
 const { StartCallbackServer } = require('./CallbackServer');
 const { ChzzkState } = require('./ChzzkStatus');
+const { Log, LogCode } = require('../VishaSynapse/VSLog');
 
 // 치지직 OAuth: 인증 URL·state, code → 토큰, 토큰 저장·로드·갱신 (명세 01 §5.2, §5.3)
 // 토큰·Client Secret·code는 로그와 에러 메시지에 넣지 않는다 (§3.4).
@@ -75,7 +76,7 @@ function CreateAuth({
         try {
             await Refresh();
         } catch (err) {
-            console.error(`치지직 토큰 갱신 실패: ${Describe(err)}`);
+            Log.Error(LogCode.CHZZK_TOKEN_REFRESH_FAILED, `치지직 토큰 갱신 실패: ${Describe(err)}`);
             if (err.authRequired) {
                 onAuthRequired();
                 return;
@@ -101,7 +102,7 @@ function CreateAuth({
                 await secretStore.set(TOKEN_NAME, value);
                 return;
             } catch (err) {
-                console.error(`치지직 토큰 저장 실패 (${attempt}/${SAVE_ATTEMPTS}): ${err.code || err.name}`);
+                Log.Error(LogCode.CHZZK_TOKEN_SAVE_FAILED, `치지직 토큰 저장 실패 (${attempt}/${SAVE_ATTEMPTS}): ${err.code || err.name}`);
                 if (attempt < SAVE_ATTEMPTS) await new Promise((resolve) => setTimeout(resolve, saveRetryDelayMs));
             }
         }
@@ -135,7 +136,7 @@ function CreateAuth({
             }
         }
         if (!IsValidToken(parsed)) {
-            if (raw) console.error('치지직 토큰 형식 오류: CHZZK_TOKEN_INVALID');
+            if (raw) Log.Error(LogCode.CHZZK_TOKEN_INVALID, '치지직 토큰 형식 오류: CHZZK_TOKEN_INVALID');
             return false;
         }
         token = { accessToken: parsed.accessToken, refreshToken: parsed.refreshToken, expiresAt: parsed.expiresAt };
@@ -182,15 +183,20 @@ function CreateAuth({
         try {
             await secretStore.remove(TOKEN_NAME);
         } catch (err) {
-            console.error(`치지직 토큰 삭제 실패: ${err.code || err.name}`);
+            Log.Error(LogCode.CHZZK_TOKEN_DELETE_FAILED, `치지직 토큰 삭제 실패: ${err.code || err.name}`);
         }
     }
 
     function NewState() {
         pendingState = { value: crypto.randomBytes(16).toString('hex'), expiresAt: Date.now() + STATE_TTL_MS };
         const query = new URLSearchParams({ clientId, redirectUri, state: pendingState.value });
-        // URL에는 clientId·redirectUri·state만 들어 있어 출력해도 된다 (§5.2-2)
-        console.log(`치지직 연동 필요. 이 PC의 브라우저에서 여세요: ${INTERLOCK_URL}?${query}`);
+        // URL에는 clientId·redirectUri·state만 들어 있어 콘솔에는 출력해도 된다 (§5.2-2).
+        // 41로는 state가 든 URL을 보내지 않고 안내 문구만 보낸다 (명세 02 §6.13.4)
+        Log.Warn(
+            LogCode.CHZZK_AUTH_REQUIRED,
+            '치지직 연동 필요. 서버 PC 콘솔의 인증 URL을 여세요',
+            `치지직 연동 필요. 이 PC의 브라우저에서 여세요: ${INTERLOCK_URL}?${query}`,
+        );
     }
 
     function OpenCallbackServer() {
@@ -199,7 +205,7 @@ function CreateAuth({
         try {
             callbackServer = startCallbackServer({ host: hostname, port: callbackPort, path: pathname, onCallback: HandleCallback });
         } catch (err) {
-            console.error(`치지직 콜백 서버 시작 실패: ${err.code || err.name}`);
+            Log.Error(LogCode.CHZZK_CALLBACK_FAILED, `치지직 콜백 서버 시작 실패: ${err.code || err.name}`);
         }
     }
 
@@ -220,11 +226,11 @@ function CreateAuth({
     // 콜백: state 검증 → code → 토큰 → 저장 → 세션 시작 (§5.2-3∼6)
     async function HandleCallback({ code, state, error }) {
         if (!pendingState || typeof state !== 'string' || state !== pendingState.value) {
-            console.error('치지직 콜백 거부: CHZZK_STATE_MISMATCH');
+            Log.Warn(LogCode.CHZZK_CALLBACK_REJECTED, '치지직 콜백 거부: CHZZK_STATE_MISMATCH');
             return false;
         }
         if (Date.now() >= pendingState.expiresAt) {
-            console.error('치지직 콜백 거부: CHZZK_STATE_EXPIRED');
+            Log.Warn(LogCode.CHZZK_CALLBACK_REJECTED, '치지직 콜백 거부: CHZZK_STATE_EXPIRED');
             NewState();
             return false;
         }
@@ -236,7 +242,7 @@ function CreateAuth({
             });
             await UseNewToken(content);
         } catch (err) {
-            console.error(`치지직 연동 실패: ${Describe(err)}`);
+            Log.Error(LogCode.CHZZK_AUTH_FAILED, `치지직 연동 실패: ${Describe(err)}`);
             NewState();
             return false;
         }

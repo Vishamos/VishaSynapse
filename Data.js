@@ -1,5 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
+const { Log, LogCode } = require('./VishaSynapse/VSLog');
 
 const defaultData = {
     Chzzk:{
@@ -61,7 +62,7 @@ const Data = {
             await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
         }catch(err)
         {
-            console.log('failed save Datas. : ', err);
+            Log.Error(LogCode.CONFIG_SAVE_FAILED, `설정 파일 저장 실패: ${err.code || err.name}`);
         }
     }
 }

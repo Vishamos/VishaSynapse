@@ -3,6 +3,7 @@ const Data = require('./Data');
 const { testConnection, closePool } = require('./VIshaDB/VSDB');
 const { SocketServer, StopAccepting, CloseAllClients } = require('./VishaSynapse/VSServer');
 const { serverEvents } = require('./VishaSynapse/VSServerData');
+const { Log, LogCode } = require('./VishaSynapse/VSLog');
 const SecretStore = require('./Secret/SecretStore');
 const ChzzkStatus = require('./Chzzk/ChzzkStatus');
 const { CreateAuth } = require('./Chzzk/ChzzkAuth');
@@ -27,7 +28,7 @@ let shuttingDown = false;
 
 // 치지직을 쓰지 않으면 상태는 disabled 그대로 두고 이유만 남긴다 (명세 01 §5.5)
 function SkipChzzk(reason) {
-    console.log(`치지직 상태: disabled (${reason})`);
+    Log.Info(LogCode.CHZZK_STATUS, `치지직 상태: disabled (${reason})`);
 }
 
 // 치지직 연동 시작: 토큰이 없으면 OAuth(§5.2), 있으면 세션(§5.4). 중계 서버 시작을 막지 않는다 (명세 02 §2.3)
@@ -100,7 +101,7 @@ async function StartChzzk(config, dbOk) {
 async function Shutdown() {
     if (shuttingDown) return;
     shuttingDown = true;
-    console.log('정상 종료 시작');
+    Log.Info(LogCode.SERVER_SHUTDOWN, '정상 종료 시작');
     // ① 새 접속 받지 않음
     StopAccepting();
     // ② 진행 중인 토큰 저장을 최대 5초 기다림
@@ -146,7 +147,7 @@ async function Shutdown() {
         await SocketServer(serverData.SocketPort);
     } catch (err) {
         // 포트 사용 중이면 4, 그 밖(포트 값 오류 포함)은 5 (§2.6f, §2.6h)
-        console.error(`중계 서버 시작 실패: ${err.code || err.name}`);
+        Log.Error(LogCode.SERVER_START_FAILED, `중계 서버 시작 실패: ${err.code || err.name}`);
         await closePool();
         process.exitCode = err.code === 'EADDRINUSE' ? ExitCode.PORT_IN_USE : ExitCode.SERVER_START_FAILED;
         return;

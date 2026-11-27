@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
 const { SERVER_DIR } = require('../Env');
+const { Log, LogCode } = require('../VishaSynapse/VSLog');
 
 const REQUIRED_VARS = ['ENV_DB_HOST', 'ENV_DB_PORT', 'ENV_DB_USER', 'ENV_DB_PASS', 'ENV_DB_NAME'];
 const DEFAULT_CA_PATH = path.join(SERVER_DIR, 'db-ca.pem');
@@ -60,13 +61,11 @@ async function testConnection(options) {
             "SELECT COUNT(*) AS n FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'secret_store'"
         );
 
-        console.log('DB 연결 성공');
-        console.log(`  TLS 사용: ${tlsOn ? '예' : '아니요'}`);
-        console.log(`  secret_store 테이블: ${tables[0].n > 0 ? '있음' : '없음'}`);
+        Log.Info(LogCode.DB_CONNECTED, `DB 연결 성공 (TLS 사용: ${tlsOn ? '예' : '아니요'}, secret_store 테이블: ${tables[0].n > 0 ? '있음' : '없음'})`);
         return tlsOn;
     } catch (err) {
         const missing = err.missing ? ` (누락: ${err.missing.join(', ')})` : '';
-        console.error(`DB 연결 실패: ${err.code || 'UNKNOWN'}${missing}`);
+        Log.Error(LogCode.DB_CONNECT_FAILED, `DB 연결 실패: ${err.code || 'UNKNOWN'}${missing}`);
         return false;
     }
 }
