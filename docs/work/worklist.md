@@ -1,15 +1,15 @@
 # 작업 목록
 
-## 현재 진행 (갱신: 2026-11-27 01:10)
-- 진행 중: 치지직 채팅 → 컨트롤러(41) — Chzzk-1∼4 구현 완료, 실연동 확인 대기 (Main)
+## 현재 진행 (갱신: 2026-11-27 12:40)
+- 진행 중: 컨트롤러 지원(서버 로그·종료) — Relay-4 → Relay-6 → Relay-5 순서 (Developer, 같은 파일을 고쳐 순서대로)
 - 마지막 완료: Chzzk-3 b270fbc
-- 대기: (사용자) Chzzk 실연동 확인, 실기기 연동 클라이언트 쪽 작업, 노션 정리(plan_review "노션에 적을 것"), push / visha-common 동작 확인(새 세션: 설정 점검 → 현재 상태 → Chzzk-5로 developer 사이클) / 받은 이슈 #10(security 시점 변경)·#1 처리 여부 / 서버 로그 → 41 세부 확정 후 명세 02 반영(plan_review Q19) / 컨트롤러의 치지직 설정 방식 의논 중
-- 다음: qa(명세 02 Relay-1∼3 + 명세 01 Chzzk-1∼4) → Relay-4 → Chzzk-5
+- 대기: (사용자) Chzzk 실연동 확인, 실기기 연동 클라이언트 쪽 작업, 노션 정리(plan_review "노션에 적을 것"), push / 받은 이슈 #10(security 시점 변경)·#1 처리 여부
+- 다음: Relay-4∼6 완료 → **VishasController 저장소에 이슈 등록**(추가된 것: 서버 로그 `log`·`code` 목록, `server.shutdown`과 403, 종료 코드 0∼5와 권장 동작, `node VishaCore.js` 실행, `config.json` 직접 수정. 근거 protocol README §5c·§10, 사용자 요청 2026-11-27) → qa(명세 02 Relay-1∼6 + 명세 01 Chzzk-1∼4) → Chzzk-5
 
 ## 운영 방식
 - 형식과 규칙은 `visha-common:design-work` 5절. 끝난 항목은 명세 "구현 현황"에 기록하고 여기서 지운다.
 - 항목 형식: `- [ ] <번호> [P1] <내용> — 기획: [태그] / 명세: <문서 번호> §<절> / 이슈: <저장소>-#<번호>`. 근거 기획이 없으면 `기획: 없음(AI 발견 버그)`.
-- 번호 영역은 plan_review "태그 목록". 다음 번호: Relay-5, Chzzk-6, DB-1, OBS-1, Deploy-1, Dep-4, Doc-7. 커밋에 남은 옛 번호(C1∼C11, G1∼G9)는 그대로 둔다.
+- 번호 영역은 plan_review "태그 목록". 다음 번호: Relay-7, Chzzk-6, DB-1, OBS-1, Deploy-1, Dep-4, Doc-7. 커밋에 남은 옛 번호(C1∼C11, G1∼G9)는 그대로 둔다.
 
 ## 사용자 할 일
 - [ ] **Chzzk 실연동 확인 (개발 PC).** `npm start` → 콘솔의 인증 URL을 같은 PC 브라우저로 열어 동의 → `치지직 상태: connected` 확인 → 채팅 한 줄 보내고 1분 건수 로그·컨트롤러(41) 수신 확인. 실패하면 콘솔의 에러 코드를 알려 준다. 확인 대상: 리디렉션 URL 허용(명세 01 §6 Q1), `socket.io-client@2.5.0` 호환(Q3), 구독 `sessionKey` 위치, CHAT 원본 필드, 재시작 후 저장된 토큰으로 바로 접속
@@ -29,7 +29,9 @@
 ## Relay. 중계 서버 (VishaSynapse/)
 > C6∼C11, Relay-1∼3 완료(2026-11-18, 진행도는 명세 02 "구현 현황"). qa 미실시: 명세 02 기준 `test/` 작성(C6∼C11, Relay-1∼3 범위).
 
-- [ ] Relay-4 [P1] 포트 사용 중(`EADDRINUSE`)이면 서버 `'error'` 처리기가 없어 프로세스가 죽음. 동작을 명세에 정한 뒤 수정. 시작 시 포트 값 검사(`IsValidPort`, 명세에 없음)도 함께 명세에 정한다 — 기획: 없음(AI 발견 버그) / 명세: 02 / 이슈: VishaSynapse-#5
+- [ ] Relay-4 [P1] 포트 사용 중(`EADDRINUSE`)이면 `SERVER_START_FAILED` 로그 후 종료 코드 4로 끝낸다(지금은 오류 처리 없이 죽음). 시작 시 포트 값 검사(`IsValidPort`)는 실패 시 종료 코드 5 — 기획: 없음(AI 발견 버그) / 명세: 02 §2.6f·§2.6h / 이슈: VishaSynapse-#5
+- [ ] Relay-5 [P1] 로그 모듈: 콘솔 로그를 `level`·`code`로 바꾸고 41로 `log` 전송(전부, `from` 0), 41 없을 때 100건 보관, 전송 실패는 콘솔만, `CLIENT_ERROR_SENT` 10초 묶기, 치지직 인증 URL은 41에 보내지 않음, `Data.js` 저장 실패 로그를 에러 코드만 — 기획: [vs-Message-Command] / 명세: 02 §6.13
+- [ ] Relay-6 [P1] 정상 종료와 종료 코드: `server.shutdown`(같은 PC의 41만, 아니면 403), Ctrl+C 같은 순서, 토큰 저장 최대 5초 대기, 1001로 클라이언트 종료, 종료 코드 0∼5 — 기획: [vs-Loop] / 명세: 02 §2.6a∼2.6g
 
 ## Chzzk. 치지직 공식 API 전환 (명세 01, 진행도는 명세 01 "구현 현황")
 > 2026-11-25 보류 해제(VishaSynapse-#2), 범위: 채팅 수신 → 컨트롤러(41). 후원·Vishamos 전달은 나중. Chzzk-1∼4 구현 2026-11-25, 실연동 확인은 "사용자 할 일".

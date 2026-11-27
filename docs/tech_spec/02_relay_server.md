@@ -1,6 +1,6 @@
 # 02. 중계 서버 (VishaSynapse 허브)
 
-- 작성: 2026-11-16 / 갱신: 2026-11-18
+- 작성: 2026-11-16 / 갱신: 2026-11-27 (§2.6a∼2.6h 종료·종료 코드, §6.13 서버 로그 → 컨트롤러)
 - 상태: **승인** (2026-11-17). 그때까지의 `해석` 항목은 모두 승인되어 `확정(승인)`으로 표시. `보류`·`확인 필요` 항목의 남은 결정은 `docs/work/plan_review.md`
 - 반영한 노션 판: `VishaSTD / VishaSynapse` 2026-11-17 17:00, 하위 `[vs-DB]`·`[vs-Chzzk]`·`[vs-OBS]`·`[vs-Discord]` 2026-11-17 04:35. 이 페이지와 하위 페이지만 근거로 삼고, mermaid 그림에만 있는 내용은 근거로 삼지 않는다.
 - `근거` 열 규칙: 기획 태그만 적는다. `확정(승인)`·`해석`·`확인 필요` 행에는 그렇게 정한 이유를 한 문장 덧붙인다. 노션 문장 인용, 수정 시각, 변경 이력은 적지 않는다(이력은 git).
@@ -44,7 +44,14 @@
 | 2.5b | 치지직 연결이 실패하면 횟수 제한 없이 재시도한다(§7.1.7). | 확정 | 사용자 결정 2026-11-25 |
 | 2.5c | DB 연결 이후: 치지직 보안 데이터 조회, 시청자 데이터 추가·제거·수정, 프로그램의 DB 작업 요청 처리 | 확정 | `[vs-DB]` |
 | 2.6 | "프로그램 연결 체크"는 WebSocket ping/pong이다(§5.6). | 확정 | `[vs-Client-Ping]` |
-| 2.6a | "종료 호출"의 주체와 종료 방식 | 확인 필요(B 그룹) | plan_review Q13 |
+| 2.6a | 서버와 컨트롤러(41)는 같은 PC에서 실행한다. 컨트롤러가 서버를 켜고 끌 수 있다(실행 명령은 `node VishaCore.js`, `start.bat`은 쓰지 않음). 서버 설정 변경은 컨트롤러가 `config.json`을 직접 고치고 서버를 다시 켜는 방식이며, 설정을 바꾸는 네트워크 명령은 두지 않는다. | 확정 | 사용자 결정 2026-11-27. `config.json`은 시작할 때만 읽고 쓰므로 실행 중 수정과 충돌하지 않음 |
+| 2.6b | 종료 명령 `server.shutdown`: `{"to":0,"from":41,"type":"server.shutdown","data":""}`. **같은 PC(루프백 주소 `127.0.0.1`·`::1`·`::ffff:127.0.0.1`)에서 접속해 41로 등록한 연결**이 보낸 것만 받는다. | 확정 | 사용자 결정 2026-11-27. 등록 인증이 없으므로(§5.5d) LAN의 다른 기기는 접속 주소로 막음 |
+| 2.6c | 조건에 맞지 않는 `server.shutdown`(41이 아님, 루프백이 아님)에는 403 `forbidden`을 돌려주고 연결은 유지한다. | 확정(승인) | 501(모르는 type)과 구분해 "있지만 허용 안 됨"을 알리려고 새 코드 |
+| 2.6d | 정상 종료 순서: ① 새 접속 받지 않음 ② 진행 중인 치지직 토큰 저장을 최대 5초 기다림 ③ 모든 클라이언트를 종료 코드 1001(`server_shutdown`)로 끊음 ④ 치지직 세션·콜백 서버·DB 풀 닫기 ⑤ 종료 코드 0으로 끝냄. 5초가 지나면 저장을 기다리지 않고 진행한다. | 확정(승인) | 치지직 Refresh Token이 1회용이라 저장 중 강제 종료하면 재연동이 필요함(Q13). 1001은 WebSocket 표준 "going away" |
+| 2.6e | 콘솔의 Ctrl+C(SIGINT)도 §2.6d와 같은 순서로 끝낸다. | 확정(승인) | 수동 실행 때도 토큰 저장을 지키려고 |
+| 2.6f | 프로세스 종료 코드(컨트롤러가 다시 켤지 판단용): `0` 정상 종료, `1` 예기치 못한 오류(Node 기본), `2` `.env` 로드 실패, `3` 설정 파일 읽기 실패, `4` 포트 사용 중(`EADDRINUSE`), `5` 그 밖의 중계 서버 시작 실패. | 확정 | 사용자 결정 2026-11-27(종료 코드 허용). 번호 배정은 제안값 |
+| 2.6g | 종료 코드 2∼5는 설정·환경 문제라 다시 켜도 같은 결과다. 컨트롤러는 1만 자동 재시작하고 2∼5는 사용자에게 표시하는 것을 권한다(컨트롤러 쪽 동작, protocol README에 적음). | 확정(승인) | 무한 재시작 방지 |
+| 2.6h | 포트 사용 중이면 프로세스가 오류 처리 없이 죽지 않고, `SERVER_START_FAILED` 로그 후 종료 코드 4로 끝낸다. | 확정 | Relay-4를 이 항목으로 정함 |
 
 ---
 
@@ -129,11 +136,59 @@
 | 6.9 | 목적지가 서버 시그니처면 직접 관리 요소(치지직·DB·OBS·Discord) 기능으로 API나 다른 서버에 전달한다. 요소별 메시지는 각 페이지의 "메시지 처리"를 따른다. | 확정 | `[vs-Message-Type]`, `[vs-Message-Command]`. 요소별 메시지 처리 절은 아직 없음(plan_review Q12·Q14, 이슈 #2·#3) |
 | 6.10 | 서버 메시지 Type과 헤더: `client.register`(클라이언트 → 서버, `to` 0, `from` 자기 시그니처, `data` 비어 있음), `client.registered`(서버 → 클라이언트, `to` 받는 쪽 시그니처, `from` 0, `data: { index }`), `error`(서버 → 클라이언트, `to` 받는 쪽 시그니처, `from` 0, `data: { code, message }`). `message`는 에러 표의 이름. | 확정 | `[vs-Message-Type]` |
 | 6.10a | 등록 전 클라이언트에게 보내는 `error`는 `to`를 생략한다(키 없음). | 확정 | `[vs-Message-Type]` |
-| 6.12 | 에러 메시지(`type: error`, 연결 유지): 400 `bad_request`(JSON 파싱 실패, `to`·`from`·`type` 누락·형식 오류), 401 `not_registered`(등록 전 메시지), 404 `not_found`(표에 없는 시그니처로 등록·전송), 501 `not_implemented`(모르는 `type`, 보류 요소 101·111·121), 503 `unavailable`(기능은 있으나 지금 못 씀, 예: DB 끊김) | 확정 | `[vs-Message-Error]` |
+| 6.12 | 에러 메시지(`type: error`, 연결 유지): 403 `forbidden`(허용되지 않은 명령, §2.6c), 400 `bad_request`(JSON 파싱 실패, `to`·`from`·`type` 누락·형식 오류), 401 `not_registered`(등록 전 메시지), 404 `not_found`(표에 없는 시그니처로 등록·전송), 501 `not_implemented`(모르는 `type`, 보류 요소 101·111·121), 503 `unavailable`(기능은 있으나 지금 못 씀, 예: DB 끊김) | 확정 | `[vs-Message-Error]` |
 | 6.12a | 같은 표의 연결 종료 행: 1008 `register_timeout`(종료 신호에 코드·이유), 1008 `from_mismatch`(바이너리 `from` 불일치, 종료 신호에 코드·이유), 1009 `message_too_big`(라이브러리가 자동 종료), 1006 `disconnect`(ping 미응답, 상대가 응답하지 않으므로 종료 신호 없이 끊음). 표는 서버 에러 코드 전체 목록이며, 나중에 컨트롤러가 모든 행을 받는다. | 확정 | `[vs-Message-Error]` |
 | 6.12b | 에러 메시지는 JSON으로 보낸다. 바이너리 메시지의 문제에는 에러를 보내지 않는다. JSON의 "받을 대상 없음"은 §6.12d. 컨트롤러로 보낼 때는 같은 클라이언트·같은 코드를 묶는다. | 확정(승인) | `[vs-Message-Error]`. 바이너리는 초당 수십 회 반복되므로 에러를 보내지 않음 |
 | 6.12c | 에러 표는 다른 프로토콜(직접 관리 요소, 컨트롤러)을 만들며 늘어난다. 각 기기의 JSON·바이너리 송수신 기능은 해당 클라이언트 사양에 적는다. | 확정 | `[vs-Message-Error]` |
 | 6.12d | 중계하는 JSON의 목적지에 연결된 클라이언트가 없으면 404 `not_found`를 돌려준다. 바이너리는 에러 없이 버린다. | 확정(해석) | `[vs-Message-Relay]`, `[vs-Message-Error]`. "해당 에러"의 코드를 404 사유 "없는 목적지로 보냄"에 맞춰 404로 해석 |
+
+### 6.13 서버 로그 → 컨트롤러(41) (`[vs-Message-Command]`)
+| # | 내용 | 구분 | 근거 |
+|---|---|---|---|
+| 6.13.1 | 서버 프로세스가 콘솔에 쓰는 로그를 **전부** 41로도 보낸다. 형식: `{"to":41,"from":0,"type":"log","data":{"level","code","message","time"}}`. 41이 여러 개면 모두에게 보낸다. | 확정 | 사용자 결정 2026-11-27 |
+| 6.13.2 | `from`은 서버 프로세스에서 나온 로그만 0이다(치지직·DB 모듈 포함). 기기 로그는 그 기기 시그니처로 오며 서버는 중계만 한다(protocol README §5b). | 확정 | 사용자 결정 2026-11-27 |
+| 6.13.3 | `level`: `error`·`warn`·`info`. `code`: 아래 표의 문자열(앞부분이 출처: `SERVER_`·`CLIENT_`·`DB_`·`CHZZK_`). 출처를 따로 적는 키는 두지 않는다. `message`: 콘솔에 쓰는 문장과 같다. `time`: Unix 밀리초. | 확정 | 사용자 결정 2026-11-27(에러 세분화, 출처는 code·message로) |
+| 6.13.4 | 비밀 값은 서버가 보내기 전에 뺀다(받는 쪽 가림은 보조). 치지직 인증 URL은 41로 보내지 않고 `CHZZK_AUTH_REQUIRED` "치지직 연동 필요. 서버 PC 콘솔의 인증 URL을 여세요"로 대신한다. 에러 객체를 통째로 쓰는 로그는 에러 코드만 쓰도록 고친다(`Data.js` 설정 저장 실패). | 확정 | CLAUDE.md 비밀 값 규칙. 인증 URL에 OAuth `state`가 들어 있음 |
+| 6.13.5 | 41이 하나도 등록되지 않은 동안의 로그는 최근 100건까지 쌓아 두고, 41이 등록하면 그 41에게 오래된 것부터 보낸 뒤 이어서 실시간으로 보낸다. 100건을 넘으면 오래된 것부터 버린다. | 확정(승인) | 시작 때 로그(DB 연결 등)는 컨트롤러가 붙기 전에 끝나므로. 2026-11-27 제안에 이의 없음 |
+| 6.13.6 | 41로 로그를 보내다 실패한 것은 콘솔에만 쓰고 41로 다시 보내지 않는다. | 확정(승인) | 실패 로그가 또 실패 로그를 만드는 반복 방지 |
+| 6.13.7 | `.env`·설정 파일 실패처럼 중계 서버를 열기 전에 끝나는 경우는 41로 보낼 수 없다. 종료 코드(§2.6f)로 알린다. | 확정 | |
+| 6.13.8 | 이 로그 기능은 §6.12b의 "컨트롤러로 에러 보내기"를 대신한다. 클라이언트에게 보낸 `error`(400·404 등)도 `CLIENT_ERROR_SENT`(warn)로 41에 보내되, 같은 클라이언트·같은 코드는 10초에 한 번만 보낸다(그 사이 건수는 다음 로그 `message`에 붙임). | 확정(승인) | §6.12b "묶는다"의 구체값. 잘못된 클라이언트가 초당 여러 번 보내도 41이 넘치지 않게 |
+
+`code` 목록 (콘솔 로그 기준, 로그를 추가하면 이 표에 추가)
+
+| code | level | 언제 |
+|---|---|---|
+| `SERVER_STARTED` | info | 중계 서버가 포트에서 실행됨 |
+| `SERVER_START_FAILED` | error | 중계 서버 시작 실패(포트 사용 중 포함) |
+| `SERVER_SHUTDOWN` | info | 정상 종료 시작(§2.6d) |
+| `CONFIG_SAVE_FAILED` | error | 설정 파일 저장 실패 |
+| `CLIENT_CONNECTED` | info | 접속(등록 전) |
+| `CLIENT_REGISTERED` | info | 등록 완료 |
+| `CLIENT_REREGISTER_IGNORED` | warn | 이미 등록한 연결의 재등록 |
+| `CLIENT_REGISTER_TIMEOUT` | warn | 30초 안에 등록 안 해 종료 |
+| `CLIENT_DELAY` | warn | 다음 ping까지 pong 없음 |
+| `CLIENT_DELAY_RESOLVED` | info | 지연 해소 |
+| `CLIENT_PING_TIMEOUT` | warn | ping 미응답으로 종료 |
+| `CLIENT_DISCONNECTED` | info | 연결 종료 |
+| `CLIENT_MESSAGE_ERROR` | error | 메시지 처리 중 예외 |
+| `CLIENT_SOCKET_ERROR` | error | 소켓 오류 |
+| `CLIENT_ERROR_SENT` | warn | 클라이언트에게 `error`를 보냄(§6.13.8) |
+| `DB_CONNECTED` | info | DB 연결 성공(TLS 사용 여부, `secret_store` 유무를 `message`에) |
+| `DB_CONNECT_FAILED` | error | DB 연결 실패(에러 코드를 `message`에) |
+| `CHZZK_STATUS` | info | 치지직 상태 변경(`disabled` 사유 포함) |
+| `CHZZK_CHAT_COUNT` | info | 1분 채팅 건수 |
+| `CHZZK_AUTH_REQUIRED` | warn | 연동 필요(§6.13.4) |
+| `CHZZK_AUTH_FAILED` | error | 연동(code → 토큰) 실패 |
+| `CHZZK_CALLBACK_READY` | info | 콜백 서버 대기 |
+| `CHZZK_CALLBACK_FAILED` | error | 콜백 서버 시작 실패·오류, 콜백 처리 오류 |
+| `CHZZK_CALLBACK_REJECTED` | warn | 콜백 거부(`state` 불일치·만료) |
+| `CHZZK_TOKEN_REFRESH_FAILED` | error | 토큰 갱신 실패 |
+| `CHZZK_TOKEN_SAVE_FAILED` | error | 토큰 저장 실패(시도 횟수를 `message`에) |
+| `CHZZK_TOKEN_DELETE_FAILED` | error | 토큰 삭제 실패 |
+| `CHZZK_TOKEN_INVALID` | error | 저장된 토큰 형식 오류 |
+| `CHZZK_SESSION_RETRY` | warn | 세션 실패, 재시도 대기 |
+| `CHZZK_REVOKED` | error | 권한 철회 |
+| `CHZZK_CHAT_INVALID` | warn | 채팅 형식 오류 |
 
 **앱 메시지를 만들 때 참고 (자문 기록 2026-11-17, 서버 범위 밖)**
 - JSON은 명령, 바이너리는 ① 초당 10회 이상 연속 ② 큰 숫자 배열 ③ 지연에 민감할 때.
