@@ -1,9 +1,9 @@
 # 작업 목록
 
 ## 현재 진행 (갱신: 2026-11-27 13:30)
-- 진행 중: 컨트롤러 지원 2차 — Relay-7 → Relay-8 → Chzzk-6 (Developer, 같은 파일이라 순서대로)
-- 마지막 완료: Relay-5 be35f32 (Relay-4 af8ddfb, Relay-6 c7f30b9, security 통과 2026-11-27)
-- 대기: Relay-7·8, Chzzk-6 완료 → security → (사용자) push → **VishasController 저장소에 이슈 등록**(41 같은 PC 하나·403·409, 자동 종료와 `config.get/set`, `authUrl`, 서버 로그 `log`·`code` 목록, `server.shutdown`과 403, 종료 코드 0∼5와 권장 동작, `node VishaCore.js` 실행, `config.json` 직접 수정, 창 없이 실행 시 stdout 계속 읽기·접속 먼저 시도, 비밀 값·파일은 "관리 폴더 열기"·`tools/set-secret.js` 실행 버튼으로 사용자가 직접 입력(WebSocket으로 보내지 않음). 근거 protocol README §5c·§10, 사용자 요청 2026-11-27) / (사용자) `node VishaCore.js` 실제 확인(종료 코드 4, shutdown·Ctrl+C 0과 1001, 컨트롤러 로그 표시), Chzzk 실연동, 노션 정리, 받은 이슈 #10·#1
+- 진행 중: 컨트롤러 지원 2차 — Relay-7·8, Chzzk-6 구현 완료, push 전 security 2차 점검 중 (Main)
+- 마지막 완료: Chzzk-6 c3cf737 (Relay-7 90c545e, Relay-8 e5be48f. 1차 Relay-4∼6 security 통과)
+- 대기: security 2차 → (사용자) push → **VishasController 저장소에 이슈 등록**(41 같은 PC 하나·403·409, 자동 종료와 `config.get/set`, `authUrl`, 서버 로그 `log`·`code` 목록, `server.shutdown`과 403, 종료 코드 0∼5와 권장 동작, `node VishaCore.js` 실행, `config.json` 직접 수정, 창 없이 실행 시 stdout 계속 읽기·접속 먼저 시도, 비밀 값·파일은 "관리 폴더 열기"·`tools/set-secret.js` 실행 버튼으로 사용자가 직접 입력(WebSocket으로 보내지 않음). 근거 protocol README §5c·§10, 사용자 요청 2026-11-27) / (사용자) 인증 URL 10분 만료 시 자동 재발급 여부 결정(지금은 콜백·실패 때만 재발급) / (사용자) `node VishaCore.js` 실제 확인(종료 코드 4, shutdown·Ctrl+C 0과 1001, 컨트롤러 로그 표시, config.json에 ControllerShutdownMinutes 추가, 409·자동 종료, LAN 403, authUrl로 브라우저 연동), Chzzk 실연동, 노션 정리, 받은 이슈 #10·#1
 - 다음: qa(명세 02 Relay-1∼8 + 명세 01 Chzzk-1∼4·6) → Chzzk-5
 
 ## 운영 방식
@@ -33,14 +33,14 @@
 - [x] Relay-5 [P1] 로그 모듈: 콘솔 로그를 `level`·`code`로 바꾸고 41로 `log` 전송(전부, `from` 0), 41 없을 때 100건 보관, 전송 실패는 콘솔만, `CLIENT_ERROR_SENT` 10초 묶기, 치지직 인증 URL은 41에 보내지 않음, `Data.js` 저장 실패 로그를 에러 코드만 — 기획: [vs-Message-Command] / 명세: 02 §6.13
 - [x] Relay-6 [P1] 정상 종료와 종료 코드: `server.shutdown`(같은 PC의 41만, 아니면 403), Ctrl+C 같은 순서, 토큰 저장 최대 5초 대기, 1001로 클라이언트 종료, 종료 코드 0∼5 — 기획: [vs-Loop] / 명세: 02 §2.6a∼2.6g
 
-- [ ] Relay-7 [P1] 41은 같은 PC(루프백) 연결 하나만 등록: 다른 PC 403, 중복 409(새 에러 코드), 연결 유지. 종료 시 클라이언트 close 대기 최대 3초, `SERVER_STARTING` 로그 추가 — 기획: [vs-Message-Signature] / 명세: 02 §5.9.1∼5.9.3, §2.6d, §6.13
-- [ ] Relay-8 [P1] 컨트롤러 부재 시 자동 종료(`ControllerShutdownMinutes` 기본 10, 0이면 끔, 41이 끊겼을 때만 타이머), 41 전용 `config.get`·`config.set`(`to` 0, 이 항목 하나, 잘못된 값 400, `config.json` 저장), 로그 `SERVER_CONTROLLER_LOST`·`SERVER_AUTO_SHUTDOWN` — 기획: [vs-Loop] / 명세: 02 §5.9.4∼5.9.10, §2.6a
+- [x] Relay-7 [P1] 41은 같은 PC(루프백) 연결 하나만 등록: 다른 PC 403, 중복 409(새 에러 코드), 연결 유지. 종료 시 클라이언트 close 대기 최대 3초, `SERVER_STARTING` 로그 추가 — 기획: [vs-Message-Signature] / 명세: 02 §5.9.1∼5.9.3, §2.6d, §6.13
+- [x] Relay-8 [P1] 컨트롤러 부재 시 자동 종료(`ControllerShutdownMinutes` 기본 10, 0이면 끔, 41이 끊겼을 때만 타이머), 41 전용 `config.get`·`config.set`(`to` 0, 이 항목 하나, 잘못된 값 400, `config.json` 저장), 로그 `SERVER_CONTROLLER_LOST`·`SERVER_AUTO_SHUTDOWN` — 기획: [vs-Loop] / 명세: 02 §5.9.4∼5.9.10, §2.6a
 
 ## Chzzk. 치지직 공식 API 전환 (명세 01, 진행도는 명세 01 "구현 현황")
 > 2026-11-25 보류 해제(VishaSynapse-#2), 범위: 채팅 수신 → 컨트롤러(41). 후원·Vishamos 전달은 나중. Chzzk-1∼4 구현 2026-11-25, 실연동 확인은 "사용자 할 일".
 
 - [ ] Chzzk-5 [P1] (security 낮음, 제안) `RedirectUri` 호스트가 `localhost`·`127.0.0.1`·`::1`이 아니면 시작 거부(콜백 서버가 LAN에 열리지 않게), state 비교를 `crypto.timingSafeEqual`로, DB 판정 로그 문구를 "DB 연결 실패 또는 TLS 미사용"으로 — 기획: 없음(security 점검) / 명세: 01 §4·§5.2
-- [ ] Chzzk-6 [P1] `auth_required`일 때 `chzzk.status`에 `authUrl`을 넣어 41에게 보내고, URL을 새로 만들면 다시 보냄(로그에는 계속 URL 없음) — 기획: [vs-Chzzk] / 명세: 02 §7.1.3b
+- [x] Chzzk-6 [P1] `auth_required`일 때 `chzzk.status`에 `authUrl`을 넣어 41에게 보내고, URL을 새로 만들면 다시 보냄(로그에는 계속 URL 없음) — 기획: [vs-Chzzk] / 명세: 02 §7.1.3b
 
 ## Dep. 의존성·설정
 - [ ] Dep-3 [P2] 전역 `@google/gemini-cli@0.22.4` 업데이트 또는 삭제

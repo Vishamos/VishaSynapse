@@ -15,6 +15,7 @@
 | §4, §4.1, §6.4a, §6.4c, §6.10a, §6.12a, §6.12d | `VishaSynapse/` VSServerCommand·VSServerData·VSHandler | 구현 2026-11-18 (로컬 동작 테스트 13개 통과, 클라이언트 앱 미수정이라 실기기 미확인, qa 미실행) | Relay-1∼3 |
 | §2.3, §4(41), §7.1.3, §7.1.3a, §7.1.6, §7.1.7 | `VishaSynapse/` VSServerCommand·VSServerData·VSHandler, `Chzzk/`, `VishaCore.js` | 구현 2026-11-25 (로컬 확인, 치지직 실연동·컨트롤러 미확인) | Chzzk-1∼4 |
 | §2.6a∼2.6h, §6.12(403), §6.13 | `VishaCore.js`, `Data.js`, `VishaSynapse/` VSServer·VSHandler·VSServerCommand·VSServerData·**VSLog(새)**, `VIshaDB/VSDB.js`, `Chzzk/` | 구현 2026-11-27 (로컬 동작 확인, `VishaCore.js` 실행·컨트롤러·LAN 403 미확인, qa 미실행) | Relay-4∼6 |
+| §5.9, §2.6d(3초), §6.12(409), §6.13(code 3개), §7.1.3b | `VishaSynapse/` VSHandler·VSServer·VSServerCommand·VSServerData·VSLog, `VishaCore.js`, `Data.js`, `Chzzk/` ChzzkStatus·ChzzkAuth | 구현 2026-11-27 (로컬 동작 확인, 실제 실행·컨트롤러·LAN 403·치지직 실연동 미확인, qa 미실행) | Relay-7·8, Chzzk-6 |
 
 항목 구분: `확정` 기획서·사용자 답변에 명확한 것 / `확정(승인)` 보충한 해석을 사용자가 승인한 것 / `해석` 모호한 부분을 보충한 것(승인 필요) / `보류` 해당 작업을 시작할 때 정함 / `확인 필요` 결정이 필요한 것 / `AI 제안` 기획서에 없는 것
 
@@ -125,7 +126,7 @@
 | 5.9.7 | 로그: 41이 끊겨 타이머 시작 `SERVER_CONTROLLER_LOST`(warn, 남은 시간을 `message`에), 자동 종료 시작 `SERVER_AUTO_SHUTDOWN`(info). 41이 없으므로 이 로그는 §6.13.5대로 쌓였다가 다음 41에게 간다. | 확정(승인) | §6.13 code 표 규칙 |
 | 5.9.8 | **서버 설정 명령(41 전용):** 기기용 이름 규칙(protocol README §5b)을 `to` 0에도 쓴다. `{"to":0,"from":41,"type":"config.get","data":""}` → 서버가 `{"to":41,"from":0,"type":"config.get","data":{"ControllerShutdownMinutes":10}}`. `config.set`은 `data`의 항목을 검사해 적용·`config.json`에 저장한 뒤 같은 형식으로 현재 값을 답한다. 등록된 41(=같은 PC) 말고 보내면 403. | 확정 | 사용자 결정 2026-11-27("변수 저장은 서버가 관리"). §2.6a의 "설정 네트워크 명령 없음"을 41 전용·허용 항목 한정으로 바꿈 |
 | 5.9.9 | `config.get`·`config.set`으로 다루는 항목은 `ControllerShutdownMinutes` 하나다. 그 밖의 키(`SocketPort`·`Chzzk.*` 등)는 `config.set`에서 무시하고 `config.get`에 넣지 않는다. 항목은 필요할 때 이 표에 추가한다. 비밀 값은 넣지 않는다. | 확정(승인) | SocketPort는 바꾸지 않기로 함(2026-11-27). 치지직 설정은 아직 정하지 않음 |
-| 5.9.10 | `config.set`의 값이 잘못되면(0 미만, 숫자 아님) 그 항목은 바꾸지 않고 400을 돌려준다. 변경은 바로 적용한다(타이머가 돌고 있으면 새 값으로 다시 계산하지 않고, 다음 끊김부터 적용). | 확정(승인) | 단순하게 |
+| 5.9.10 | `config.set`의 값이 잘못되면(0 미만, 숫자 아님) 그 항목은 바꾸지 않고 400을 돌려준 뒤, 성공·실패와 관계없이 `config.get` 형식으로 현재 값을 답한다. `config.get`은 실제로 쓰는 값(파일 값이 잘못되면 기본값)을 준다. 소수 분은 허용하고, `setTimeout` 한도(약 24.8일)를 넘는 값은 그 한도로 줄인다. 값이 0이면 41이 끊겨도 `SERVER_CONTROLLER_LOST`를 남기지 않는다. 변경은 바로 적용한다(타이머가 돌고 있으면 새 값으로 다시 계산하지 않고, 다음 끊김부터 적용). | 확정(승인) | 단순하게 |
 
 ---
 
@@ -234,7 +235,7 @@
 | 7.1.2 | 채팅을 받는다. 후원은 나중. | 확정 | 명세 01 §1. 2026-11-25 사용자 결정으로 범위 축소, 노션 반영 대기 |
 | 7.1.3 | 받은 채팅은 컨트롤러(41)로 JSON `chzzk.chat`을 보낸다. Vishamos(11) 전달(캐릭터 상호작용)은 나중. | 확정 | 사용자 결정 2026-11-25, 노션 반영 대기. 형식은 명세 01 §7 |
 | 7.1.3a | 치지직 연동 상태(`disabled`·`auth_required`·`disconnected`·`connected`)를 바뀔 때마다, 그리고 컨트롤러가 등록한 직후 그 컨트롤러에게 `chzzk.status`로 보낸다. | 확정 | 사용자 결정 2026-11-25("컨트롤러에 표기가 필요한 것은 모두"), 명세 01 §5.5 |
-| 7.1.3b | 상태가 `auth_required`이고 인증 URL이 만들어져 있으면 `chzzk.status`의 `data`에 `authUrl`(콘솔에 쓰는 것과 같은 URL)을 넣어 41에게 보낸다. URL을 새로 만들면(만료 10분 후 재발급 등) 다시 보낸다. 41이 같은 PC 하나뿐이므로(§5.9.1) URL이 LAN으로 나가지 않는다. 로그 `CHZZK_AUTH_REQUIRED`에는 계속 URL을 넣지 않는다(§6.13.4). | 확정 | 사용자 결정 2026-11-27(백그라운드 실행 시 콘솔을 볼 수 없음) |
+| 7.1.3b | 상태가 `auth_required`이고 인증 URL이 만들어져 있으면 `chzzk.status`의 `data`에 `authUrl`(콘솔에 쓰는 것과 같은 URL)을 넣어 41에게 보낸다. URL을 새로 만들면(만료된 state로 콜백이 오거나 연동이 실패해 재발급할 때) 다시 보낸다. auth_required에서 벗어나면 그 URL은 버린다. 41이 같은 PC 하나뿐이므로(§5.9.1) URL이 LAN으로 나가지 않는다. 로그 `CHZZK_AUTH_REQUIRED`에는 계속 URL을 넣지 않는다(§6.13.4). | 확정 | 사용자 결정 2026-11-27(백그라운드 실행 시 콘솔을 볼 수 없음) |
 | 7.1.4 | 채팅 송신은 지금 범위에 넣지 않는다. | 확정 | 사용자 답변 |
 | 7.1.5 | 방송 관리(카테고리 변경 등)는 나중에 한다. 지금은 구현하지 않는다. | 확정(보류) | `[vs-Chzzk]`, 사용자 답변 |
 | 7.1.6 | 목적지 101로 오는 명령은 없다(채팅 송신 제외, §7.1.4). 501을 돌려준다. | 확정 | 사용자 결정 2026-11-25, 노션 반영 대기 |
