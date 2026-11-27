@@ -1,9 +1,9 @@
 # 작업 목록
 
 ## 현재 진행 (갱신: 2026-11-27 14:00)
-- 진행 중: 컨트롤러 지원 후속 — Relay-9 → Chzzk-7 (Developer)
-- 마지막 완료: Chzzk-6 c3cf737 (Relay-4∼8, Chzzk-6 push 완료, security 1·2차 통과)
-- 대기: Relay-9·Chzzk-7 완료 → security(Data.js·인증 URL 변경) → (사용자) push / 올린 이슈 VishasController-#2(컨트롤러 쪽 반영) / (사용자) `node VishaCore.js` 실제 확인(종료 코드 4, shutdown·Ctrl+C 0과 1001, 로그 표시, config.json에 ControllerShutdownMinutes 추가, 409·자동 종료, LAN 403, authUrl로 브라우저 연동), Chzzk 실연동, 노션 정리, 받은 이슈 #10·#1
+- 진행 중: 컨트롤러 지원 후속 — Relay-9·Chzzk-7 구현 완료, security 3차 점검 중 (Main)
+- 마지막 완료: Chzzk-7 8d8ecfe (Relay-9 6840dff. Relay-4∼8, Chzzk-6은 push 완료)
+- 대기: security 3차 → (사용자) push → VishasController-#2에 정수 분·URL 자동 재발급 댓글 / 올린 이슈 VishasController-#2(컨트롤러 쪽 반영) / (사용자) `node VishaCore.js` 실제 확인(종료 코드 4, shutdown·Ctrl+C 0과 1001, 로그 표시, config.json에 ControllerShutdownMinutes 추가, 409·자동 종료, LAN 403, authUrl로 브라우저 연동), Chzzk 실연동, 노션 정리, 받은 이슈 #10·#1
 - 다음: qa(명세 02 Relay-1∼9 + 명세 01 Chzzk-1∼4·6·7) → Chzzk-5
 
 ## 운영 방식
@@ -35,14 +35,14 @@
 
 - [x] Relay-7 [P1] 41은 같은 PC(루프백) 연결 하나만 등록: 다른 PC 403, 중복 409(새 에러 코드), 연결 유지. 종료 시 클라이언트 close 대기 최대 3초, `SERVER_STARTING` 로그 추가 — 기획: [vs-Message-Signature] / 명세: 02 §5.9.1∼5.9.3, §2.6d, §6.13
 - [x] Relay-8 [P1] 컨트롤러 부재 시 자동 종료(`ControllerShutdownMinutes` 기본 10, 0이면 끔, 41이 끊겼을 때만 타이머), 41 전용 `config.get`·`config.set`(`to` 0, 이 항목 하나, 잘못된 값 400, `config.json` 저장), 로그 `SERVER_CONTROLLER_LOST`·`SERVER_AUTO_SHUTDOWN` — 기획: [vs-Loop] / 명세: 02 §5.9.4∼5.9.10, §2.6a
-- [ ] Relay-9 [P1] `config.json` 저장을 순서대로 처리(연달아 온 `config.set`이 파일을 섞지 않게), `ControllerShutdownMinutes`는 0 또는 1 이상 정수만(소수 400, 파일 값이 잘못되면 기본값) — 기획: 없음(security 2026-11-27 낮음 1·2) / 명세: 02 §5.9.5·§5.9.10
+- [x] Relay-9 [P1] `config.json` 저장을 순서대로 처리(연달아 온 `config.set`이 파일을 섞지 않게), `ControllerShutdownMinutes`는 0 또는 1 이상 정수만(소수 400, 파일 값이 잘못되면 기본값) — 기획: 없음(security 2026-11-27 낮음 1·2) / 명세: 02 §5.9.5·§5.9.10
 
 ## Chzzk. 치지직 공식 API 전환 (명세 01, 진행도는 명세 01 "구현 현황")
 > 2026-11-25 보류 해제(VishaSynapse-#2), 범위: 채팅 수신 → 컨트롤러(41). 후원·Vishamos 전달은 나중. Chzzk-1∼4 구현 2026-11-25, 실연동 확인은 "사용자 할 일".
 
 - [ ] Chzzk-5 [P1] (security 낮음, 제안) `RedirectUri` 호스트가 `localhost`·`127.0.0.1`·`::1`이 아니면 시작 거부(콜백 서버가 LAN에 열리지 않게), state 비교를 `crypto.timingSafeEqual`로, DB 판정 로그 문구를 "DB 연결 실패 또는 TLS 미사용"으로 — 기획: 없음(security 점검) / 명세: 01 §4·§5.2
 - [x] Chzzk-6 [P1] `auth_required`일 때 `chzzk.status`에 `authUrl`을 넣어 41에게 보내고, URL을 새로 만들면 다시 보냄(로그에는 계속 URL 없음) — 기획: [vs-Chzzk] / 명세: 02 §7.1.3b
-- [ ] Chzzk-7 [P1] auth_required 동안 인증 URL 만료(10분) 시 자동 재발급 → 콘솔 + `chzzk.status`(새 `authUrl`), 재발급 때 `CHZZK_AUTH_REQUIRED` 로그는 다시 남기지 않음 — 기획: [vs-Chzzk] / 명세: 02 §7.1.3c
+- [x] Chzzk-7 [P1] auth_required 동안 인증 URL 만료(10분) 시 자동 재발급 → 콘솔 + `chzzk.status`(새 `authUrl`), 재발급 때 `CHZZK_AUTH_REQUIRED` 로그는 다시 남기지 않음 — 기획: [vs-Chzzk] / 명세: 02 §7.1.3c
 
 ## Dep. 의존성·설정
 - [ ] Dep-3 [P2] 전역 `@google/gemini-cli@0.22.4` 업데이트 또는 삭제

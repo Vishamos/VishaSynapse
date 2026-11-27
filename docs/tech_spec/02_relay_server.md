@@ -16,6 +16,7 @@
 | §2.3, §4(41), §7.1.3, §7.1.3a, §7.1.6, §7.1.7 | `VishaSynapse/` VSServerCommand·VSServerData·VSHandler, `Chzzk/`, `VishaCore.js` | 구현 2026-11-25 (로컬 확인, 치지직 실연동·컨트롤러 미확인) | Chzzk-1∼4 |
 | §2.6a∼2.6h, §6.12(403), §6.13 | `VishaCore.js`, `Data.js`, `VishaSynapse/` VSServer·VSHandler·VSServerCommand·VSServerData·**VSLog(새)**, `VIshaDB/VSDB.js`, `Chzzk/` | 구현 2026-11-27 (로컬 동작 확인, `VishaCore.js` 실행·컨트롤러·LAN 403 미확인, qa 미실행) | Relay-4∼6 |
 | §5.9, §2.6d(3초), §6.12(409), §6.13(code 3개), §7.1.3b | `VishaSynapse/` VSHandler·VSServer·VSServerCommand·VSServerData·VSLog, `VishaCore.js`, `Data.js`, `Chzzk/` ChzzkStatus·ChzzkAuth | 구현 2026-11-27 (로컬 동작 확인, 실제 실행·컨트롤러·LAN 403·치지직 실연동 미확인, qa 미실행) | Relay-7·8, Chzzk-6 |
+| §5.9.5·§5.9.10(정수 분, 저장 순서), §7.1.3c | `Data.js`, `Chzzk/ChzzkAuth.js` | 구현 2026-11-27 (로컬 확인, 실제 실행·치지직 실연동 미확인, qa 미실행) | Relay-9, Chzzk-7 |
 
 항목 구분: `확정` 기획서·사용자 답변에 명확한 것 / `확정(승인)` 보충한 해석을 사용자가 승인한 것 / `해석` 모호한 부분을 보충한 것(승인 필요) / `보류` 해당 작업을 시작할 때 정함 / `확인 필요` 결정이 필요한 것 / `AI 제안` 기획서에 없는 것
 
@@ -236,7 +237,7 @@
 | 7.1.3 | 받은 채팅은 컨트롤러(41)로 JSON `chzzk.chat`을 보낸다. Vishamos(11) 전달(캐릭터 상호작용)은 나중. | 확정 | 사용자 결정 2026-11-25, 노션 반영 대기. 형식은 명세 01 §7 |
 | 7.1.3a | 치지직 연동 상태(`disabled`·`auth_required`·`disconnected`·`connected`)를 바뀔 때마다, 그리고 컨트롤러가 등록한 직후 그 컨트롤러에게 `chzzk.status`로 보낸다. | 확정 | 사용자 결정 2026-11-25("컨트롤러에 표기가 필요한 것은 모두"), 명세 01 §5.5 |
 | 7.1.3b | 상태가 `auth_required`이고 인증 URL이 만들어져 있으면 `chzzk.status`의 `data`에 `authUrl`(콘솔에 쓰는 것과 같은 URL)을 넣어 41에게 보낸다. URL을 새로 만들면(만료된 state로 콜백이 오거나 연동이 실패해 재발급할 때) 다시 보낸다. auth_required에서 벗어나면 그 URL은 버린다. 41이 같은 PC 하나뿐이므로(§5.9.1) URL이 LAN으로 나가지 않는다. 로그 `CHZZK_AUTH_REQUIRED`에는 계속 URL을 넣지 않는다(§6.13.4). | 확정 | 사용자 결정 2026-11-27(백그라운드 실행 시 콘솔을 볼 수 없음) |
-| 7.1.3c | auth_required 동안 인증 URL이 만료되면(state 유효 10분) 서버가 새 state로 URL을 다시 만들어 콘솔에 쓰고 `chzzk.status`(새 `authUrl`)를 41에게 보낸다. auth_required를 벗어날 때까지 반복한다. 재발급 때 로그 `CHZZK_AUTH_REQUIRED`는 다시 남기지 않는다(10분마다 같은 경고가 쌓이지 않게). | 확정 | 사용자 결정 2026-11-27(자동 재발급). 로그 생략은 보충 |
+| 7.1.3c | auth_required 동안 인증 URL이 만료되면(state 유효 10분) 서버가 새 state로 URL을 다시 만들어 콘솔에 쓰고 `chzzk.status`(새 `authUrl`)를 41에게 보낸다. auth_required를 벗어날 때까지 반복한다. 재발급 때 로그 `CHZZK_AUTH_REQUIRED`는 다시 남기지 않는다(10분마다 같은 경고가 쌓이지 않게). 만료된 state로 콜백이 오거나 연동이 실패해 새로 만들 때(사용자 행동에 대한 반응)는 이전처럼 로그를 남긴다. | 확정 | 사용자 결정 2026-11-27(자동 재발급). 로그 생략은 보충 |
 | 7.1.4 | 채팅 송신은 지금 범위에 넣지 않는다. | 확정 | 사용자 답변 |
 | 7.1.5 | 방송 관리(카테고리 변경 등)는 나중에 한다. 지금은 구현하지 않는다. | 확정(보류) | `[vs-Chzzk]`, 사용자 답변 |
 | 7.1.6 | 목적지 101로 오는 명령은 없다(채팅 송신 제외, §7.1.4). 501을 돌려준다. | 확정 | 사용자 결정 2026-11-25, 노션 반영 대기 |
