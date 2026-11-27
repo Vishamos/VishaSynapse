@@ -71,6 +71,7 @@ async function StartChzzk(config, dbOk) {
         callbackPort: chzzk.CallbackPort,
         secretStore: SecretStore,
         setState: ChzzkStatus.SetState,
+        setAuthUrl: ChzzkStatus.SetAuthUrl,
         onAuthorized: () => session.Start(),
         onAuthRequired: RequireAuth,
     });

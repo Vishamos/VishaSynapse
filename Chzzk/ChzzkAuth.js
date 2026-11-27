@@ -50,6 +50,7 @@ function CreateAuth({
     callbackPort,
     secretStore,
     setState,
+    setAuthUrl,
     onAuthorized,
     onAuthRequired,
     api = ChzzkApi,
@@ -190,13 +191,16 @@ function CreateAuth({
     function NewState() {
         pendingState = { value: crypto.randomBytes(16).toString('hex'), expiresAt: Date.now() + STATE_TTL_MS };
         const query = new URLSearchParams({ clientId, redirectUri, state: pendingState.value });
+        const url = `${INTERLOCK_URL}?${query}`;
         // URL에는 clientId·redirectUri·state만 들어 있어 콘솔에는 출력해도 된다 (§5.2-2).
-        // 41로는 state가 든 URL을 보내지 않고 안내 문구만 보낸다 (명세 02 §6.13.4)
+        // 로그(41로도 감)에는 state가 든 URL을 넣지 않고 안내 문구만 보낸다 (명세 02 §6.13.4)
         Log.Warn(
             LogCode.CHZZK_AUTH_REQUIRED,
             '치지직 연동 필요. 서버 PC 콘솔의 인증 URL을 여세요',
-            `치지직 연동 필요. 이 PC의 브라우저에서 여세요: ${INTERLOCK_URL}?${query}`,
+            `치지직 연동 필요. 이 PC의 브라우저에서 여세요: ${url}`,
         );
+        // URL은 같은 PC의 41에게만 chzzk.status authUrl로 보낸다 (명세 02 §7.1.3b, §5.9.1)
+        setAuthUrl(url);
     }
 
     function OpenCallbackServer() {
