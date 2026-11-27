@@ -243,7 +243,7 @@ VishaSynapse(중계 서버)에 접속하는 클라이언트 앱(Vishamos, Face, 
   - 창 없이 실행하면서 콘솔 출력을 받아 오려면 출력을 **계속 읽어야 한다**. 읽지 않으면 버퍼가 차서 서버가 멈출 수 있다. 받지 않을 거면 출력을 넘겨받지 않는다.
   - 컨트롤러를 켜면 먼저 서버에 접속해 보고, 접속이 안 될 때만 서버를 실행한다(이미 실행 중이면 새 서버는 종료 코드 4로 끝난다).
 - 자동 종료: 등록된 41이 끊기고 `ControllerShutdownMinutes`(기본 10분) 안에 다시 등록하지 않으면 서버가 스스로 정상 종료한다(종료 코드 0). `0`이면 자동 종료하지 않는다. 서버를 켠 뒤 41이 한 번도 등록하지 않았으면 자동 종료하지 않는다.
-- 서버 설정(41 전용): `config.get`·`config.set`을 `to` 0으로 보낸다. 지금 다루는 항목은 `ControllerShutdownMinutes`(분, 0 이상 숫자) 하나다. `config.set`에는 항상 `config.get` 형식으로 현재 값이 답으로 온다(잘못된 값이면 400 다음에 현재 값). `config.get`은 서버가 실제로 쓰는 값을 준다(파일 값이 잘못되면 기본값). 바뀐 값은 다음 끊김부터 적용된다. `0`이면 끊겨도 자동 종료 로그·타이머가 없다.
+- 서버 설정(41 전용): `config.get`·`config.set`을 `to` 0으로 보낸다. 지금 다루는 항목은 `ControllerShutdownMinutes`(분, 0 또는 1 이상의 정수) 하나다. `config.set`에는 항상 `config.get` 형식으로 현재 값이 답으로 온다(잘못된 값이면 400 다음에 현재 값). `config.get`은 서버가 실제로 쓰는 값을 준다(파일 값이 잘못되면 기본값). 바뀐 값은 다음 끊김부터 적용된다. `0`이면 끊겨도 자동 종료 로그·타이머가 없다.
   ```json
   {"to":0,"from":41,"type":"config.set","data":{"ControllerShutdownMinutes":30}}
   {"to":41,"from":0,"type":"config.get","data":{"ControllerShutdownMinutes":30}}

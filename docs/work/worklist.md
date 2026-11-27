@@ -1,15 +1,15 @@
 # 작업 목록
 
 ## 현재 진행 (갱신: 2026-11-27 14:00)
-- 진행 중: 컨트롤러 지원 후속 — Chzzk-7 명세 완료, Relay-9(config 저장 순서 처리·값 범위, security 2차 낮음 1·2) 단위 결정 대기 (Main)
+- 진행 중: 컨트롤러 지원 후속 — Relay-9 → Chzzk-7 (Developer)
 - 마지막 완료: Chzzk-6 c3cf737 (Relay-4∼8, Chzzk-6 push 완료, security 1·2차 통과)
-- 대기: (사용자) Relay-9 값 단위(정수 분 / 초) / 올린 이슈 VishasController-#2(컨트롤러 쪽 반영) / (사용자) `node VishaCore.js` 실제 확인(종료 코드 4, shutdown·Ctrl+C 0과 1001, 로그 표시, config.json에 ControllerShutdownMinutes 추가, 409·자동 종료, LAN 403, authUrl로 브라우저 연동), Chzzk 실연동, 노션 정리, 받은 이슈 #10·#1
-- 다음: Relay-9 + Chzzk-7 (Developer) → qa(명세 02 Relay-1∼9 + 명세 01 Chzzk-1∼4·6·7) → Chzzk-5
+- 대기: Relay-9·Chzzk-7 완료 → security(Data.js·인증 URL 변경) → (사용자) push / 올린 이슈 VishasController-#2(컨트롤러 쪽 반영) / (사용자) `node VishaCore.js` 실제 확인(종료 코드 4, shutdown·Ctrl+C 0과 1001, 로그 표시, config.json에 ControllerShutdownMinutes 추가, 409·자동 종료, LAN 403, authUrl로 브라우저 연동), Chzzk 실연동, 노션 정리, 받은 이슈 #10·#1
+- 다음: qa(명세 02 Relay-1∼9 + 명세 01 Chzzk-1∼4·6·7) → Chzzk-5
 
 ## 운영 방식
 - 형식과 규칙은 `visha-common:design-work` 5절. 끝난 항목은 명세 "구현 현황"에 기록하고 여기서 지운다.
 - 항목 형식: `- [ ] <번호> [P1] <내용> — 기획: [태그] / 명세: <문서 번호> §<절> / 이슈: <저장소>-#<번호>`. 근거 기획이 없으면 `기획: 없음(AI 발견 버그)`.
-- 번호 영역은 plan_review "태그 목록". 다음 번호: Relay-9, Chzzk-8, DB-1, OBS-1, Deploy-1, Dep-4, Doc-7. 커밋에 남은 옛 번호(C1∼C11, G1∼G9)는 그대로 둔다.
+- 번호 영역은 plan_review "태그 목록". 다음 번호: Relay-10, Chzzk-8, DB-1, OBS-1, Deploy-1, Dep-4, Doc-7. 커밋에 남은 옛 번호(C1∼C11, G1∼G9)는 그대로 둔다.
 
 ## 사용자 할 일
 - [ ] **Chzzk 실연동 확인 (개발 PC).** `npm start` → 콘솔의 인증 URL을 같은 PC 브라우저로 열어 동의 → `치지직 상태: connected` 확인 → 채팅 한 줄 보내고 1분 건수 로그·컨트롤러(41) 수신 확인. 실패하면 콘솔의 에러 코드를 알려 준다. 확인 대상: 리디렉션 URL 허용(명세 01 §6 Q1), `socket.io-client@2.5.0` 호환(Q3), 구독 `sessionKey` 위치, CHAT 원본 필드, 재시작 후 저장된 토큰으로 바로 접속
@@ -35,6 +35,7 @@
 
 - [x] Relay-7 [P1] 41은 같은 PC(루프백) 연결 하나만 등록: 다른 PC 403, 중복 409(새 에러 코드), 연결 유지. 종료 시 클라이언트 close 대기 최대 3초, `SERVER_STARTING` 로그 추가 — 기획: [vs-Message-Signature] / 명세: 02 §5.9.1∼5.9.3, §2.6d, §6.13
 - [x] Relay-8 [P1] 컨트롤러 부재 시 자동 종료(`ControllerShutdownMinutes` 기본 10, 0이면 끔, 41이 끊겼을 때만 타이머), 41 전용 `config.get`·`config.set`(`to` 0, 이 항목 하나, 잘못된 값 400, `config.json` 저장), 로그 `SERVER_CONTROLLER_LOST`·`SERVER_AUTO_SHUTDOWN` — 기획: [vs-Loop] / 명세: 02 §5.9.4∼5.9.10, §2.6a
+- [ ] Relay-9 [P1] `config.json` 저장을 순서대로 처리(연달아 온 `config.set`이 파일을 섞지 않게), `ControllerShutdownMinutes`는 0 또는 1 이상 정수만(소수 400, 파일 값이 잘못되면 기본값) — 기획: 없음(security 2026-11-27 낮음 1·2) / 명세: 02 §5.9.5·§5.9.10
 
 ## Chzzk. 치지직 공식 API 전환 (명세 01, 진행도는 명세 01 "구현 현황")
 > 2026-11-25 보류 해제(VishaSynapse-#2), 범위: 채팅 수신 → 컨트롤러(41). 후원·Vishamos 전달은 나중. Chzzk-1∼4 구현 2026-11-25, 실연동 확인은 "사용자 할 일".
