@@ -1,15 +1,15 @@
 # 작업 목록
 
-## 현재 진행 (갱신: 2026-11-27 13:30)
-- 진행 중: 컨트롤러 지원 2차 — Relay-7·8, Chzzk-6 구현 완료, push 전 security 2차 점검 중 (Main)
-- 마지막 완료: Chzzk-6 c3cf737 (Relay-7 90c545e, Relay-8 e5be48f. 1차 Relay-4∼6 security 통과)
-- 대기: security 2차 → (사용자) push → **VishasController 저장소에 이슈 등록**(41 같은 PC 하나·403·409, 자동 종료와 `config.get/set`, `authUrl`, 서버 로그 `log`·`code` 목록, `server.shutdown`과 403, 종료 코드 0∼5와 권장 동작, `node VishaCore.js` 실행, `config.json` 직접 수정, 창 없이 실행 시 stdout 계속 읽기·접속 먼저 시도, 비밀 값·파일은 "관리 폴더 열기"·`tools/set-secret.js` 실행 버튼으로 사용자가 직접 입력(WebSocket으로 보내지 않음). 근거 protocol README §5c·§10, 사용자 요청 2026-11-27) / (사용자) 인증 URL 10분 만료 시 자동 재발급 여부 결정(지금은 콜백·실패 때만 재발급) / (사용자) `node VishaCore.js` 실제 확인(종료 코드 4, shutdown·Ctrl+C 0과 1001, 컨트롤러 로그 표시, config.json에 ControllerShutdownMinutes 추가, 409·자동 종료, LAN 403, authUrl로 브라우저 연동), Chzzk 실연동, 노션 정리, 받은 이슈 #10·#1
-- 다음: qa(명세 02 Relay-1∼8 + 명세 01 Chzzk-1∼4·6) → Chzzk-5
+## 현재 진행 (갱신: 2026-11-27 14:00)
+- 진행 중: 컨트롤러 지원 후속 — Chzzk-7 명세 완료, Relay-9(config 저장 순서 처리·값 범위, security 2차 낮음 1·2) 단위 결정 대기 (Main)
+- 마지막 완료: Chzzk-6 c3cf737 (Relay-4∼8, Chzzk-6 push 완료, security 1·2차 통과)
+- 대기: (사용자) Relay-9 값 단위(정수 분 / 초) / 올린 이슈 VishasController-#2(컨트롤러 쪽 반영) / (사용자) `node VishaCore.js` 실제 확인(종료 코드 4, shutdown·Ctrl+C 0과 1001, 로그 표시, config.json에 ControllerShutdownMinutes 추가, 409·자동 종료, LAN 403, authUrl로 브라우저 연동), Chzzk 실연동, 노션 정리, 받은 이슈 #10·#1
+- 다음: Relay-9 + Chzzk-7 (Developer) → qa(명세 02 Relay-1∼9 + 명세 01 Chzzk-1∼4·6·7) → Chzzk-5
 
 ## 운영 방식
 - 형식과 규칙은 `visha-common:design-work` 5절. 끝난 항목은 명세 "구현 현황"에 기록하고 여기서 지운다.
 - 항목 형식: `- [ ] <번호> [P1] <내용> — 기획: [태그] / 명세: <문서 번호> §<절> / 이슈: <저장소>-#<번호>`. 근거 기획이 없으면 `기획: 없음(AI 발견 버그)`.
-- 번호 영역은 plan_review "태그 목록". 다음 번호: Relay-9, Chzzk-7, DB-1, OBS-1, Deploy-1, Dep-4, Doc-7. 커밋에 남은 옛 번호(C1∼C11, G1∼G9)는 그대로 둔다.
+- 번호 영역은 plan_review "태그 목록". 다음 번호: Relay-9, Chzzk-8, DB-1, OBS-1, Deploy-1, Dep-4, Doc-7. 커밋에 남은 옛 번호(C1∼C11, G1∼G9)는 그대로 둔다.
 
 ## 사용자 할 일
 - [ ] **Chzzk 실연동 확인 (개발 PC).** `npm start` → 콘솔의 인증 URL을 같은 PC 브라우저로 열어 동의 → `치지직 상태: connected` 확인 → 채팅 한 줄 보내고 1분 건수 로그·컨트롤러(41) 수신 확인. 실패하면 콘솔의 에러 코드를 알려 준다. 확인 대상: 리디렉션 URL 허용(명세 01 §6 Q1), `socket.io-client@2.5.0` 호환(Q3), 구독 `sessionKey` 위치, CHAT 원본 필드, 재시작 후 저장된 토큰으로 바로 접속
@@ -41,6 +41,7 @@
 
 - [ ] Chzzk-5 [P1] (security 낮음, 제안) `RedirectUri` 호스트가 `localhost`·`127.0.0.1`·`::1`이 아니면 시작 거부(콜백 서버가 LAN에 열리지 않게), state 비교를 `crypto.timingSafeEqual`로, DB 판정 로그 문구를 "DB 연결 실패 또는 TLS 미사용"으로 — 기획: 없음(security 점검) / 명세: 01 §4·§5.2
 - [x] Chzzk-6 [P1] `auth_required`일 때 `chzzk.status`에 `authUrl`을 넣어 41에게 보내고, URL을 새로 만들면 다시 보냄(로그에는 계속 URL 없음) — 기획: [vs-Chzzk] / 명세: 02 §7.1.3b
+- [ ] Chzzk-7 [P1] auth_required 동안 인증 URL 만료(10분) 시 자동 재발급 → 콘솔 + `chzzk.status`(새 `authUrl`), 재발급 때 `CHZZK_AUTH_REQUIRED` 로그는 다시 남기지 않음 — 기획: [vs-Chzzk] / 명세: 02 §7.1.3c
 
 ## Dep. 의존성·설정
 - [ ] Dep-3 [P2] 전역 `@google/gemini-cli@0.22.4` 업데이트 또는 삭제
@@ -53,6 +54,7 @@
 - [ ] Doc-6 [P2] `docs/specs/` 정리(노션 이전 후 삭제 또는 링크)
 
 ## 올린 이슈
+- VishasController-#2 컨트롤러(41) 새 기능 반영 요청(같은 PC 하나, 실행·종료 코드, shutdown, 자동 종료·config, 서버 로그, authUrl, 비밀 값 버튼)
 - VishaSynapse-#3 OBS (보류)
 - VishaSynapse-#4 게임컴 입력 (보류, #3 선행)
 - VishaSynapse-#5·#6·#7 명세 02 보완 질문(C6∼C11 후속, 진행을 막지 않음)
