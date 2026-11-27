@@ -23,7 +23,7 @@ Node.js(v26, CommonJS) 통합 중계 서버. 방송용 기기·프로그램을 W
 ## 지도
 | 위치 | 내용 |
 |---|---|
-| 노션 `VishaSTD / VishaSynapse` | 기획서 원본(사용자 작성, 읽기 전용). 태그 `[Synapse-…]`만 본다 |
+| 노션 `VishaSTD / VishaSynapse` | 기획서 원본(사용자 작성, 읽기 전용). 태그 `[vs-…]`만 본다 |
 | `docs/tech_spec/` | 기술 명세(구현 기준)와 명세별 "구현 현황" |
 | `docs/ARCHITECTURE.md` | 모듈 구조 |
 | `docs/work/worklist.md` | 남은 작업과 현재 진행 |
@@ -49,6 +49,6 @@ Node.js(v26, CommonJS) 통합 중계 서버. 방송용 기기·프로그램을 W
 - **security 실행 조건:** 변경이 다음 중 하나에 해당하면 메인 스레드가 `security` 에이전트를 부른다. 메인 스레드가 커밋할 때는 커밋 전에 부른다. developer가 해당 변경을 커밋했으면(developer는 security를 부를 수 없다) 메인 스레드가 완료 보고를 받은 뒤 push 전에 부른다.
   - 파일: `VIshaDB/`, `Secret/`, `Env.js`, `tools/`, `CLAUDE.md`(비밀 값·안전 규칙 절), `.claude/settings.json`, `.githooks/`, `.gitignore`, `package.json`(의존성)
   - 내용: 외부 통신 코드(`fetch`, `https`, 새 소켓 연결) 추가, 객체를 통째로 로그에 쓰는 코드 추가
-- 노션은 `VishaSTD / VishaSynapse`와 하위 `[Synapse-…]` 페이지만 본다.
+- 노션은 `VishaSTD / VishaSynapse`와 하위 `[vs-…]` 페이지만 본다.
 
 문서·주석은 한국어로 쓴다(GitHub 이슈는 영어, `visha-common:git-issue`). 예전 이름으로 불리면 지금 이름을 알려 준다: `vs-status` → `visha-common:status`, `vs-plan-intake` → `visha-common:design-work`, `vs-git` → `visha-common:git-commit`·`git-issue`, `developer-workflow` → `simple-test`, `qa-workflow` → `qa-test`, `node-coding-rule` → `coding-rule`.
