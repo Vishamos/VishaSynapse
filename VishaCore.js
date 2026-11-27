@@ -129,7 +129,8 @@ async function Shutdown() {
 
 // 시작 순서: .env → config → DB 연결 확인 → 중계 서버 → 치지직 (명세 01 §5.1, 명세 02 §2.3). OBS는 보류 (§7.0)
 (async () => {
-    console.log("클라이언트 실행");
+    // 41이 아직 없으므로 쌓였다가 다음 41에게 간다 (명세 02 §6.13.5)
+    Log.Info(LogCode.SERVER_STARTING, '클라이언트 실행');
     if (!loadEnv()) {
         process.exitCode = ExitCode.ENV_LOAD_FAILED;
         return;

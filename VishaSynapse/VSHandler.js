@@ -18,8 +18,12 @@ const BINARY_TO = 0;
 const BINARY_FROM = 1;
 const BINARY_HEADER_LENGTH = 2;
 
-// server.shutdown을 받는 접속 주소: 같은 PC (§2.6b)
+// server.shutdown·41 등록을 받는 접속 주소: 같은 PC (§2.6b, §5.9.1)
 const LOOPBACK_ADDRESSES = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
+
+function IsLoopback(client) {
+    return LOOPBACK_ADDRESSES.has(client.remoteAddress);
+}
 
 function ClientLabel(client) {
     return client.index === null ? '미등록 연결' : `${client.index}번 클라이언트(${client.signature})`;
@@ -90,6 +94,17 @@ function Register(client, message) {
         SendError(client, ErrorCode.NOT_FOUND);
         return;
     }
+    // 41은 같은 PC의 연결 하나만. 다른 PC 403, 이미 있으면 409. 등록하지 않고 연결은 유지한다 (§5.9.1∼5.9.3)
+    if (message.from === Signature.CONTROLLER) {
+        if (!IsLoopback(client)) {
+            SendError(client, ErrorCode.FORBIDDEN);
+            return;
+        }
+        if (GetTargets(Signature.CONTROLLER).size > 0) {
+            SendError(client, ErrorCode.CONFLICT);
+            return;
+        }
+    }
     clearTimeout(client.registerTimer);
     client.registerTimer = null;
     client.signature = message.from;
@@ -105,7 +120,7 @@ function Register(client, message) {
 function RequestShutdown(client, message) {
     const allowed = client.signature === Signature.CONTROLLER
         && message.from === Signature.CONTROLLER
-        && LOOPBACK_ADDRESSES.has(client.remoteAddress);
+        && IsLoopback(client);
     if (!allowed) {
         SendError(client, ErrorCode.FORBIDDEN);
         return;

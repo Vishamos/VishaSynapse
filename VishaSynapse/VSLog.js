@@ -5,6 +5,7 @@ const { GetTargets } = require('./VSServerData');
 // 서버 로그: 콘솔에 쓰고 컨트롤러(41) 모두에게도 보낸다 (명세 02 §6.13)
 // 비밀 값은 넣지 않는다. 콘솔에만 보여야 하는 문장은 consoleText로 따로 준다 (§6.13.4)
 const LogCode = Object.freeze(Object.fromEntries([
+    'SERVER_STARTING',
     'SERVER_STARTED',
     'SERVER_START_FAILED',
     'SERVER_SHUTDOWN',

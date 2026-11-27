@@ -8,6 +8,7 @@ const REGISTER_TIMEOUT_MS = 30 * 1000; // 명세 02 §5.8
 const PING_INTERVAL_MS = 30 * 1000; // §5.6a
 const PING_MISS_LIMIT = 5; // §5.6c
 const MAX_PAYLOAD = 64 * 1024; // §6.5. 넘으면 ws가 1009로 끊는다 (§6.5b)
+const CLOSE_WAIT_MS = 3 * 1000; // §2.6d ③
 
 let server = null;
 let pingTimer = null;
@@ -143,16 +144,27 @@ function StopAccepting() {
     server = null;
 }
 
-// 정상 종료 ③: 모든 연결을 1001 server_shutdown으로 끊고, 모두 'close'될 때까지 기다린다 (§2.6d)
-function CloseAllClients() {
+// 정상 종료 ③: 모든 연결을 1001 server_shutdown으로 끊고, 모두 'close'될 때까지 최대 3초 기다린 뒤
+// 남은 연결은 강제로 끊는다 (§2.6d)
+async function CloseAllClients() {
+    const sockets = [];
     const waits = [];
     for (const client of connections) {
         const socket = client.socket;
         if (!socket) continue;
+        sockets.push(socket);
         waits.push(new Promise((resolve) => socket.once('close', resolve)));
         socket.close(CloseCode.SERVER_SHUTDOWN.code, CloseCode.SERVER_SHUTDOWN.reason);
     }
-    return Promise.all(waits);
+    let timer = null;
+    const timeout = new Promise((resolve) => {
+        timer = setTimeout(resolve, CLOSE_WAIT_MS);
+    });
+    await Promise.race([Promise.all(waits), timeout]);
+    clearTimeout(timer);
+    for (const socket of sockets) {
+        if (socket.readyState !== WebSocket.CLOSED) socket.terminate();
+    }
 }
 
 module.exports = { SocketServer, StopAccepting, CloseAllClients };

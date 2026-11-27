@@ -37,6 +37,7 @@ const ErrorCode = Object.freeze({
     NOT_REGISTERED: Object.freeze({ code: 401, message: 'not_registered' }),
     FORBIDDEN: Object.freeze({ code: 403, message: 'forbidden' }),
     NOT_FOUND: Object.freeze({ code: 404, message: 'not_found' }),
+    CONFLICT: Object.freeze({ code: 409, message: 'conflict' }),
     NOT_IMPLEMENTED: Object.freeze({ code: 501, message: 'not_implemented' }),
 });
 
