@@ -56,12 +56,14 @@ function CreateAuth({
     api = ChzzkApi,
     startCallbackServer = StartCallbackServer,
     saveRetryDelayMs = 1000,
+    stateTtlMs = STATE_TTL_MS,
 }) {
     let token = null;
     let refreshPromise = null;
     let savePromise = null;
     let refreshTimer = null;
     let pendingState = null;           // { value, expiresAt }
+    let stateTimer = null;             // pendingState 만료 시 자동 재발급 (명세 02 §7.1.3c)
     let callbackServer = null;
 
     function ScheduleRefresh(delayMs) {
@@ -188,19 +190,32 @@ function CreateAuth({
         }
     }
 
-    function NewState() {
-        pendingState = { value: crypto.randomBytes(16).toString('hex'), expiresAt: Date.now() + STATE_TTL_MS };
+    function ClearStateTimer() {
+        clearTimeout(stateTimer);
+        stateTimer = null;
+    }
+
+    // 자동 재발급(reissue)은 콘솔 URL 줄만 쓰고 CHZZK_AUTH_REQUIRED 로그는 다시 남기지 않는다 (명세 02 §7.1.3c)
+    function NewState(reissue = false) {
+        pendingState = { value: crypto.randomBytes(16).toString('hex'), expiresAt: Date.now() + stateTtlMs };
         const query = new URLSearchParams({ clientId, redirectUri, state: pendingState.value });
         const url = `${INTERLOCK_URL}?${query}`;
         // URL에는 clientId·redirectUri·state만 들어 있어 콘솔에는 출력해도 된다 (§5.2-2).
         // 로그(41로도 감)에는 state가 든 URL을 넣지 않고 안내 문구만 보낸다 (명세 02 §6.13.4)
-        Log.Warn(
-            LogCode.CHZZK_AUTH_REQUIRED,
-            '치지직 연동 필요. 서버 PC 콘솔의 인증 URL을 여세요',
-            `치지직 연동 필요. 이 PC의 브라우저에서 여세요: ${url}`,
-        );
+        const consoleText = `치지직 연동 필요. 이 PC의 브라우저에서 여세요: ${url}`;
+        if (reissue) {
+            console.warn(consoleText);
+        } else {
+            Log.Warn(LogCode.CHZZK_AUTH_REQUIRED, '치지직 연동 필요. 서버 PC 콘솔의 인증 URL을 여세요', consoleText);
+        }
         // URL은 같은 PC의 41에게만 chzzk.status authUrl로 보낸다 (명세 02 §7.1.3b, §5.9.1)
         setAuthUrl(url);
+        // auth_required를 벗어날 때(콜백이 state를 쓰거나 Stop)까지 만료마다 다시 만든다 (명세 02 §7.1.3c)
+        ClearStateTimer();
+        stateTimer = setTimeout(() => {
+            stateTimer = null;
+            NewState(true);
+        }, stateTtlMs);
     }
 
     function OpenCallbackServer() {
@@ -239,6 +254,7 @@ function CreateAuth({
             return false;
         }
         pendingState = null;   // 한 번만 쓴다
+        ClearStateTimer();     // 연동이 실패하면 아래 NewState가 다시 건다
         try {
             if (error || typeof code !== 'string' || code.length === 0) throw codeError('CHZZK_AUTH_DENIED');
             const content = await api.request('POST', TOKEN_PATH, {
@@ -258,6 +274,7 @@ function CreateAuth({
     function Stop() {
         clearTimeout(refreshTimer);
         refreshTimer = null;
+        ClearStateTimer();
         CloseCallbackServer();
     }
 
