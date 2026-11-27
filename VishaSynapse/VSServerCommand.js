@@ -24,6 +24,9 @@ const MessageType = Object.freeze({
     ERROR: 'error',
     // 컨트롤러(41) → 서버 정상 종료 (§2.6b)
     SERVER_SHUTDOWN: 'server.shutdown',
+    // 컨트롤러(41) ↔ 서버 설정 조회·변경. 답도 config.get (§5.9.8)
+    CONFIG_GET: 'config.get',
+    CONFIG_SET: 'config.set',
     // 서버 → 컨트롤러(41) 서버 로그 (§6.13)
     LOG: 'log',
     // 치지직 → 컨트롤러(41) (명세 01 §7)

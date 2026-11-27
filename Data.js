@@ -9,6 +9,12 @@ const defaultData = {
         RedirectUri: 'http://localhost:4100/chzzk/callback'
     },
     SocketPort: 4000,
+    ControllerShutdownMinutes: 10, // 명세 02 §5.9.5
+}
+
+// 0 이상 숫자만 유효 (명세 02 §5.9.5, §5.9.10)
+function isValidControllerShutdownMinutes(value) {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0;
 }
 
 const filePath = path.join(process.env.LOCALAPPDATA, 'VishaSTD/server', 'config.json');
@@ -32,6 +38,14 @@ function fillDefaults(target, defaults) {
 }
 
 const Data = {
+    // loadData로 읽은 설정. 실행 중 config.set이 바꾸고 저장한다 (명세 02 §5.9.8)
+    current: null,
+    isValidControllerShutdownMinutes,
+    // 잘못된 값(0 미만, 숫자 아님)이면 기본값 (§5.9.5)
+    controllerShutdownMinutes(){
+        const value = this.current ? this.current.ControllerShutdownMinutes : undefined;
+        return isValidControllerShutdownMinutes(value) ? value : defaultData.ControllerShutdownMinutes;
+    },
     // 실패하면 null (호출하는 쪽이 종료한다)
     async loadData(){
         try{
@@ -45,11 +59,13 @@ const Data = {
                 if(err.code !== 'ENOENT') throw err;
                 const data = structuredClone(defaultData);
                 await this.saveData(data);
+                this.current = data;
                 return data;
             }
             const data = JSON.parse(fileContent);
             if (!isPlainObject(data)) throw Object.assign(new Error('CONFIG_INVALID'), { code: 'CONFIG_INVALID' });
             if (fillDefaults(data, defaultData)) await this.saveData(data);
+            this.current = data;
             return data;
         }catch(err){
             console.error(`설정 파일 읽기 실패: ${err.code || err.name}`);

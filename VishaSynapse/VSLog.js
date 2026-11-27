@@ -9,6 +9,8 @@ const LogCode = Object.freeze(Object.fromEntries([
     'SERVER_STARTED',
     'SERVER_START_FAILED',
     'SERVER_SHUTDOWN',
+    'SERVER_CONTROLLER_LOST',
+    'SERVER_AUTO_SHUTDOWN',
     'CONFIG_SAVE_FAILED',
     'CLIENT_CONNECTED',
     'CLIENT_REGISTERED',

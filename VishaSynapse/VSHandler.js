@@ -10,6 +10,10 @@ const {
 } = require('./VSServerCommand');
 const { serverEvents, NextConnectionIndex, AddRegistered, GetTargets } = require('./VSServerData');
 const { Log, LogCode } = require('./VSLog');
+const Data = require('../Data');
+
+const MINUTE_MS = 60 * 1000;
+const MAX_TIMER_MS = 2147483647; // setTimeout 최대값(약 24.8일). 넘으면 바로 실행되므로 이 값으로 줄인다
 
 const ERROR_LOG_INTERVAL_MS = 10 * 1000; // 같은 클라이언트·같은 코드의 CLIENT_ERROR_SENT 간격 (명세 02 §6.13.8)
 
@@ -23,6 +27,28 @@ const LOOPBACK_ADDRESSES = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 
 function IsLoopback(client) {
     return LOOPBACK_ADDRESSES.has(client.remoteAddress);
+}
+
+// 컨트롤러 부재 시 자동 종료 타이머 (§5.9.4∼5.9.7)
+let controllerTimer = null;
+
+function CancelControllerTimer() {
+    clearTimeout(controllerTimer);
+    controllerTimer = null;
+}
+
+// 등록된 41이 끊겼을 때 VSServer가 부른다. 0이면 자동 종료하지 않는다.
+// 설정 값은 이때 읽으므로 config.set의 새 값은 다음 끊김부터 적용된다 (§5.9.10)
+function OnControllerLost() {
+    const minutes = Data.controllerShutdownMinutes();
+    if (minutes === 0) return;
+    CancelControllerTimer();
+    Log.Warn(LogCode.SERVER_CONTROLLER_LOST, `컨트롤러(41) 연결 끊김. ${minutes}분 안에 다시 등록하지 않으면 서버를 종료합니다.`);
+    controllerTimer = setTimeout(() => {
+        controllerTimer = null;
+        Log.Info(LogCode.SERVER_AUTO_SHUTDOWN, '컨트롤러 부재로 자동 종료');
+        serverEvents.emit('shutdown');
+    }, Math.min(minutes * MINUTE_MS, MAX_TIMER_MS));
 }
 
 function ClientLabel(client) {
@@ -111,21 +137,60 @@ function Register(client, message) {
     client.index = NextConnectionIndex();
     client.status = ClientStatus.CONNECTED;
     AddRegistered(client);
+    if (client.signature === Signature.CONTROLLER) CancelControllerTimer();
     SendJson(client, MessageType.CLIENT_REGISTERED, { index: client.index });
     Log.Info(LogCode.CLIENT_REGISTERED, `${ClientLabel(client)} 등록됨`);
     serverEvents.emit('registered', client);
 }
 
-// 같은 PC에서 접속해 41로 등록한 연결만 받는다. 아니면 403, 연결은 유지 (§2.6b, §2.6c)
-function RequestShutdown(client, message) {
-    const allowed = client.signature === Signature.CONTROLLER
+// 41 전용 명령은 같은 PC에서 접속해 41로 등록한 연결만 받는다. 아니면 403, 연결은 유지 (§2.6b, §2.6c, §5.9.8)
+function IsController(client, message) {
+    return client.signature === Signature.CONTROLLER
         && message.from === Signature.CONTROLLER
         && IsLoopback(client);
-    if (!allowed) {
+}
+
+function RequestShutdown(client, message) {
+    if (!IsController(client, message)) {
         SendError(client, ErrorCode.FORBIDDEN);
         return;
     }
     serverEvents.emit('shutdown');
+}
+
+// config.get 답: 다루는 항목만 넣는다 (§5.9.8, §5.9.9)
+function SendConfig(client) {
+    SendJson(client, MessageType.CONFIG_GET, { ControllerShutdownMinutes: Data.controllerShutdownMinutes() });
+}
+
+function GetConfig(client, message) {
+    if (!IsController(client, message)) {
+        SendError(client, ErrorCode.FORBIDDEN);
+        return;
+    }
+    SendConfig(client);
+}
+
+// 다루는 항목만 검사해 적용·저장한다. 다른 키는 무시, 잘못된 값은 400이고 그 항목은 바꾸지 않는다.
+// 400을 보낸 뒤에도 현재 값을 답한다 (§5.9.8∼5.9.10)
+function SetConfig(client, message) {
+    if (!IsController(client, message)) {
+        SendError(client, ErrorCode.FORBIDDEN);
+        return;
+    }
+    const data = message.data;
+    if (data === null || typeof data !== 'object' || Array.isArray(data)) {
+        SendError(client, ErrorCode.BAD_REQUEST);
+    } else if (Object.hasOwn(data, 'ControllerShutdownMinutes')) {
+        const value = data.ControllerShutdownMinutes;
+        if (Data.isValidControllerShutdownMinutes(value)) {
+            Data.current.ControllerShutdownMinutes = value;
+            Data.saveData(Data.current); // 실패는 saveData가 CONFIG_SAVE_FAILED로 남긴다
+        } else {
+            SendError(client, ErrorCode.BAD_REQUEST);
+        }
+    }
+    SendConfig(client);
 }
 
 function HandleText(client, data) {
@@ -149,6 +214,14 @@ function HandleText(client, data) {
     }
     if (message.to === Signature.SERVER && message.type === MessageType.SERVER_SHUTDOWN) {
         RequestShutdown(client, message);
+        return;
+    }
+    if (message.to === Signature.SERVER && message.type === MessageType.CONFIG_GET) {
+        GetConfig(client, message);
+        return;
+    }
+    if (message.to === Signature.SERVER && message.type === MessageType.CONFIG_SET) {
+        SetConfig(client, message);
         return;
     }
     // 서버 시그니처: 모르는 type, 보류 요소(111·121), 받을 명령이 없는 치지직(101)은 501 (§6.12, §7.0, §7.1.6)
@@ -197,4 +270,4 @@ function HandleMessage(client, data, isBinary) {
     }
 }
 
-module.exports = { HandleMessage, ClientLabel, SendJson, SendEvent };
+module.exports = { HandleMessage, ClientLabel, SendJson, SendEvent, OnControllerLost, CancelControllerTimer };

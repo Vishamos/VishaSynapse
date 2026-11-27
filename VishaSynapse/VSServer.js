@@ -1,7 +1,7 @@
 const WebSocket = require('ws');
-const { CloseCode, ClientStatus } = require('./VSServerCommand');
+const { Signature, CloseCode, ClientStatus } = require('./VSServerCommand');
 const { connections, RemoveClient } = require('./VSServerData');
-const { HandleMessage, ClientLabel } = require('./VSHandler');
+const { HandleMessage, ClientLabel, OnControllerLost, CancelControllerTimer } = require('./VSHandler');
 const { Log, LogCode } = require('./VSLog');
 
 const REGISTER_TIMEOUT_MS = 30 * 1000; // 명세 02 §5.8
@@ -12,6 +12,7 @@ const CLOSE_WAIT_MS = 3 * 1000; // §2.6d ③
 
 let server = null;
 let pingTimer = null;
+let stopping = false; // 정상 종료 중에는 41이 끊겨도 자동 종료 타이머를 시작하지 않는다
 
 function IsValidPort(port) {
     return Number.isInteger(port) && port >= 1 && port <= 65535;
@@ -127,6 +128,8 @@ const SocketServer = (port) => new Promise((resolve, reject) => {
             RemoveClient(client);
             client.socket = null;
             Log.Info(LogCode.CLIENT_DISCONNECTED, `${ClientLabel(client)} 연결 종료 (${code}). 남은 연결: ${connections.size}`);
+            // 등록된 41만 signature가 41이다 (403·409로 거부된 연결은 null). 41은 하나뿐이다 (§5.9.1, §5.9.4)
+            if (!stopping && client.signature === Signature.CONTROLLER) OnControllerLost();
         });
     });
     server.on('close', () => {
@@ -137,6 +140,8 @@ const SocketServer = (port) => new Promise((resolve, reject) => {
 
 // 정상 종료 ①: 새 접속을 받지 않는다. 기존 연결은 ws 8에서 자동으로 닫히지 않는다 (§2.6d)
 function StopAccepting() {
+    stopping = true;
+    CancelControllerTimer();
     clearInterval(pingTimer);
     pingTimer = null;
     if (!server) return;
