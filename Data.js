@@ -12,12 +12,13 @@ const defaultData = {
     ControllerShutdownMinutes: 10, // 명세 02 §5.9.5
 }
 
-// 0 이상 숫자만 유효 (명세 02 §5.9.5, §5.9.10)
+// 0 또는 1 이상 정수만 유효. 소수·0 미만·숫자 아님은 무효 (명세 02 §5.9.5, §5.9.10)
 function isValidControllerShutdownMinutes(value) {
-    return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+    return Number.isInteger(value) && value >= 0;
 }
 
 const filePath = path.join(process.env.LOCALAPPDATA, 'VishaSTD/server', 'config.json');
+let saveQueue = Promise.resolve(); // saveData 순서 처리용 (§5.9.10)
 
 function isPlainObject(value) {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -41,7 +42,7 @@ const Data = {
     // loadData로 읽은 설정. 실행 중 config.set이 바꾸고 저장한다 (명세 02 §5.9.8)
     current: null,
     isValidControllerShutdownMinutes,
-    // 잘못된 값(0 미만, 숫자 아님)이면 기본값 (§5.9.5)
+    // 잘못된 값(소수, 0 미만, 숫자 아님)이면 기본값 (§5.9.5)
     controllerShutdownMinutes(){
         const value = this.current ? this.current.ControllerShutdownMinutes : undefined;
         return isValidControllerShutdownMinutes(value) ? value : defaultData.ControllerShutdownMinutes;
@@ -72,14 +73,20 @@ const Data = {
             return null;
         }
     },
-    async saveData(data)
+    // 호출 시점의 내용을 잡아 두고 앞 저장이 끝난 뒤 쓴다.
+    // 연달아 온 config.set이 파일을 섞어 쓰지 않고 마지막 값이 남게 한다 (명세 02 §5.9.10)
+    saveData(data)
     {
-        try{
-            await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
-        }catch(err)
-        {
-            Log.Error(LogCode.CONFIG_SAVE_FAILED, `설정 파일 저장 실패: ${err.code || err.name}`);
-        }
+        const text = JSON.stringify(data, null, 2);
+        saveQueue = saveQueue.then(async () => {
+            try{
+                await fs.writeFile(filePath, text, 'utf8');
+            }catch(err)
+            {
+                Log.Error(LogCode.CONFIG_SAVE_FAILED, `설정 파일 저장 실패: ${err.code || err.name}`);
+            }
+        });
+        return saveQueue;
     }
 }
 
