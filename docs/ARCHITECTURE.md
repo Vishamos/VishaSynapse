@@ -3,14 +3,15 @@
 ## 모듈 구성
 
 ```
-VishaCore.js          진입점. 시작 순서: .env 로드 → config.json 로드 → DB 연결 확인 → 중계 서버 시작 → 치지직 연동 시작(서버 시작을 막지 않음)
+VishaCore.js          진입점. 종료 코드 0∼5, server.shutdown·Ctrl+C 정상 종료(명세 02 §2.6). 시작 순서: .env 로드 → config.json 로드 → DB 연결 확인 → 중계 서버 시작 → 치지직 연동 시작(서버 시작을 막지 않음)
 Env.js                %LOCALAPPDATA%\VishaSTD\server\.env 로드 (값은 출력하지 않음). 없으면 종료
 Data.js               %LOCALAPPDATA%\VishaSTD\server\config.json 읽기/쓰기 (비밀 값 아님). 없으면 기본값으로 생성
 VishaSynapse/         WebSocket 중계 서버 (명세 02)
-  VSServer.js         서버 기동, 연결·등록 타이머(30초), ping 확인(30초 간격, 5회 미응답 시 종료)
+  VSServer.js         서버 기동(시작 실패 시 종료 코드 4·5), 연결·등록 타이머(30초), ping 확인(30초 간격, 5회 미응답 시 종료), 종료 시 새 접속 차단·전체 1001 종료
   VSHandler.js        JSON·바이너리 메시지 분기와 중계
   VSServerCommand.js  기기 시그니처, 명령, 종료 코드 상수
   VSServerData.js     시그니처별 등록 클라이언트 목록
+  VSLog.js            서버 로그: 콘솔 출력 + 컨트롤러(41)로 log 전송(level·code), 41 없을 때 100건 보관, CLIENT_ERROR_SENT 10초 묶기 (명세 02 §6.13)
 VIshaDB/VSDB.js       MariaDB 커넥션 풀(mysql2/promise, TLS 필수), 연결 확인
 Secret/SecretStore.js secret_store 테이블 비밀 값 읽기·쓰기 (AES-256-GCM)
 Chzzk/                치지직 공식 Open API 연동, 채팅 → 컨트롤러(41) (명세 01)
