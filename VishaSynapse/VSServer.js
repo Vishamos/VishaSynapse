@@ -80,15 +80,24 @@ function CheckConnections() {
     }
 }
 
-const SocketServer = (port) => {
+// 포트에서 듣기 시작하면 resolve, 시작하지 못하면(포트 값 오류, EADDRINUSE 등) err.code를 담아 reject (명세 02 §2.6f, §2.6h)
+const SocketServer = (port) => new Promise((resolve, reject) => {
     if (!IsValidPort(port)) {
         const err = new Error('SocketPort 설정이 올바르지 않습니다 (1~65535 정수).');
         err.code = 'SOCKET_PORT_INVALID';
         throw err;
     }
     server = new WebSocket.Server({ port, maxPayload: MAX_PAYLOAD });
-    server.on('listening', () => {
+    const OnStartError = (err) => {
+        server = null;
+        reject(err);
+    };
+    server.once('error', OnStartError);
+    server.once('listening', () => {
+        server.off('error', OnStartError);
         console.log(`WebSocket 서버가 ${port}포트에서 실행 중입니다.`);
+        pingTimer = setInterval(CheckConnections, PING_INTERVAL_MS);
+        resolve();
     });
     server.on('connection', (socket) => {
         const client = CreateClient(socket);
@@ -120,7 +129,6 @@ const SocketServer = (port) => {
         clearInterval(pingTimer);
         pingTimer = null;
     });
-    pingTimer = setInterval(CheckConnections, PING_INTERVAL_MS);
-};
+});
 
 module.exports = { SocketServer };

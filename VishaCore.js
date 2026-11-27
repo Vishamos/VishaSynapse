@@ -9,6 +9,14 @@ const { CreateSession } = require('./Chzzk/ChzzkSession');
 
 const CLIENT_SECRET_NAME = 'chzzk_client_secret';
 
+// 프로세스 종료 코드 (명세 02 §2.6f). 1(예기치 못한 오류)은 Node 기본 동작에 맡긴다.
+const ExitCode = Object.freeze({
+    ENV_LOAD_FAILED: 2,
+    CONFIG_LOAD_FAILED: 3,
+    PORT_IN_USE: 4,
+    SERVER_START_FAILED: 5,
+});
+
 // 치지직을 쓰지 않으면 상태는 disabled 그대로 두고 이유만 남긴다 (명세 01 §5.5)
 function SkipChzzk(reason) {
     console.log(`치지직 상태: disabled (${reason})`);
@@ -82,24 +90,25 @@ async function StartChzzk(config, dbOk) {
 (async () => {
     console.log("클라이언트 실행");
     if (!loadEnv()) {
-        process.exitCode = 1;
+        process.exitCode = ExitCode.ENV_LOAD_FAILED;
         return;
     }
     const serverData = await Data.loadData();
     if (!serverData) {
         console.error('설정 파일을 불러오지 못해 종료합니다.');
-        process.exitCode = 1;
+        process.exitCode = ExitCode.CONFIG_LOAD_FAILED;
         return;
     }
     // DB 연결이 실패해도 서버는 계속 동작한다 (§2.5). 치지직만 건너뛴다 (§2.5a)
     const dbOk = await testConnection();
     ChzzkStatus.Init();
     try {
-        SocketServer(serverData.SocketPort);
+        await SocketServer(serverData.SocketPort);
     } catch (err) {
+        // 포트 사용 중이면 4, 그 밖(포트 값 오류 포함)은 5 (§2.6f, §2.6h)
         console.error(`중계 서버 시작 실패: ${err.code || err.name}`);
         await closePool();
-        process.exitCode = 1;
+        process.exitCode = err.code === 'EADDRINUSE' ? ExitCode.PORT_IN_USE : ExitCode.SERVER_START_FAILED;
         return;
     }
     try {
