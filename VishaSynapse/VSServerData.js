@@ -11,6 +11,7 @@ for (const signature of CLIENT_SIGNATURES) {
 const connections = new Set();
 
 // 'registered'(client): client.registered를 보낸 직후 발생 (명세 01 §5.5, 치지직 상태 1회 전송에 쓴다)
+// 'shutdown': 허용된 server.shutdown을 받았을 때 발생 (명세 02 §2.6b, 진입점이 종료 순서를 실행한다)
 const serverEvents = new EventEmitter();
 
 // 서버 전체 연결 번호 (§5.5c, §5.5c-1). 연결이 끊겨도 줄이거나 재사용하지 않는다.

@@ -57,6 +57,7 @@ function CreateAuth({
 }) {
     let token = null;
     let refreshPromise = null;
+    let savePromise = null;
     let refreshTimer = null;
     let pendingState = null;           // { value, expiresAt }
     let callbackServer = null;
@@ -83,8 +84,17 @@ function CreateAuth({
         }
     }
 
+    // 진행 중인 저장을 정상 종료가 기다릴 수 있게 둔다 (명세 02 §2.6d)
+    function SaveToken(next) {
+        const current = TrySaveToken(next).finally(() => {
+            if (savePromise === current) savePromise = null;
+        });
+        savePromise = current;
+        return current;
+    }
+
     // 새 토큰을 DB에 먼저 저장한다. 3회 모두 실패하면 새 Refresh Token을 잃으므로 재연동이 필요하다 (§5.3)
-    async function SaveToken(next) {
+    async function TrySaveToken(next) {
         const value = JSON.stringify(next);
         for (let attempt = 1; attempt <= SAVE_ATTEMPTS; attempt += 1) {
             try {
@@ -241,7 +251,12 @@ function CreateAuth({
         CloseCallbackServer();
     }
 
-    return { LoadToken, GetAccessToken, Refresh, ClearToken, StartAuthFlow, HandleCallback, Stop };
+    // 진행 중인 갱신(1회용 Refresh Token을 이미 보냈을 수 있음)과 저장이 끝나면 resolve. 실패해도 resolve (명세 02 §2.6d)
+    function WaitPending() {
+        return Promise.allSettled([refreshPromise, savePromise].filter(Boolean));
+    }
+
+    return { LoadToken, GetAccessToken, Refresh, ClearToken, StartAuthFlow, HandleCallback, Stop, WaitPending };
 }
 
 module.exports = { CreateAuth, ToToken, Describe };

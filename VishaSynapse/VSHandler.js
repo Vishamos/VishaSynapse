@@ -15,6 +15,9 @@ const BINARY_TO = 0;
 const BINARY_FROM = 1;
 const BINARY_HEADER_LENGTH = 2;
 
+// server.shutdown을 받는 접속 주소: 같은 PC (§2.6b)
+const LOOPBACK_ADDRESSES = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
+
 function ClientLabel(client) {
     return client.index === null ? '미등록 연결' : `${client.index}번 클라이언트(${client.signature})`;
 }
@@ -80,6 +83,18 @@ function Register(client, message) {
     serverEvents.emit('registered', client);
 }
 
+// 같은 PC에서 접속해 41로 등록한 연결만 받는다. 아니면 403, 연결은 유지 (§2.6b, §2.6c)
+function RequestShutdown(client, message) {
+    const allowed = client.signature === Signature.CONTROLLER
+        && message.from === Signature.CONTROLLER
+        && LOOPBACK_ADDRESSES.has(client.remoteAddress);
+    if (!allowed) {
+        SendError(client, ErrorCode.FORBIDDEN);
+        return;
+    }
+    serverEvents.emit('shutdown');
+}
+
 function HandleText(client, data) {
     const text = data.toString('utf8');
     const message = ParseJson(text);
@@ -97,6 +112,10 @@ function HandleText(client, data) {
     }
     if (!IsKnownSignature(message.to)) {
         SendError(client, ErrorCode.NOT_FOUND);
+        return;
+    }
+    if (message.to === Signature.SERVER && message.type === MessageType.SERVER_SHUTDOWN) {
+        RequestShutdown(client, message);
         return;
     }
     // 서버 시그니처: 모르는 type, 보류 요소(111·121), 받을 명령이 없는 치지직(101)은 501 (§6.12, §7.0, §7.1.6)

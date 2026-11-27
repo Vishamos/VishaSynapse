@@ -1,7 +1,8 @@
 const { loadEnv } = require('./Env');
 const Data = require('./Data');
 const { testConnection, closePool } = require('./VIshaDB/VSDB');
-const { SocketServer } = require('./VishaSynapse/VSServer');
+const { SocketServer, StopAccepting, CloseAllClients } = require('./VishaSynapse/VSServer');
+const { serverEvents } = require('./VishaSynapse/VSServerData');
 const SecretStore = require('./Secret/SecretStore');
 const ChzzkStatus = require('./Chzzk/ChzzkStatus');
 const { CreateAuth } = require('./Chzzk/ChzzkAuth');
@@ -16,6 +17,13 @@ const ExitCode = Object.freeze({
     PORT_IN_USE: 4,
     SERVER_START_FAILED: 5,
 });
+
+const TOKEN_SAVE_WAIT_MS = 5 * 1000; // 명세 02 §2.6d ②
+
+// 정상 종료 때 닫을 치지직 객체 (StartChzzk가 만든 뒤 채운다)
+let chzzkAuth = null;
+let chzzkSession = null;
+let shuttingDown = false;
 
 // 치지직을 쓰지 않으면 상태는 disabled 그대로 두고 이유만 남긴다 (명세 01 §5.5)
 function SkipChzzk(reason) {
@@ -71,6 +79,8 @@ async function StartChzzk(config, dbOk) {
         onChat: ChzzkStatus.ForwardChat,
         onAuthRequired: RequireAuth,
     });
+    chzzkAuth = auth;
+    chzzkSession = session;
 
     let hasToken;
     try {
@@ -84,6 +94,36 @@ async function StartChzzk(config, dbOk) {
     } else {
         auth.StartAuthFlow();
     }
+}
+
+// 정상 종료 (명세 02 §2.6d). server.shutdown과 Ctrl+C(SIGINT)가 같은 순서를 쓴다 (§2.6e)
+async function Shutdown() {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log('정상 종료 시작');
+    // ① 새 접속 받지 않음
+    StopAccepting();
+    // ② 진행 중인 토큰 저장을 최대 5초 기다림
+    if (chzzkAuth) {
+        let timer = null;
+        const timeout = new Promise((resolve) => {
+            timer = setTimeout(resolve, TOKEN_SAVE_WAIT_MS);
+        });
+        await Promise.race([chzzkAuth.WaitPending(), timeout]);
+        clearTimeout(timer);
+    }
+    // ③ 모든 클라이언트를 1001로 끊음
+    await CloseAllClients();
+    // ④ 치지직 세션·콜백 서버·DB 풀 닫기
+    if (chzzkSession) chzzkSession.Stop();
+    if (chzzkAuth) chzzkAuth.Stop();
+    try {
+        await closePool();
+    } catch {
+        // 끝내는 중이므로 풀 닫기 실패는 무시하고 정상 종료 코드로 끝낸다
+    }
+    // ⑤ 종료 코드 0
+    process.exit(0);
 }
 
 // 시작 순서: .env → config → DB 연결 확인 → 중계 서버 → 치지직 (명세 01 §5.1, 명세 02 §2.3). OBS는 보류 (§7.0)
@@ -111,6 +151,9 @@ async function StartChzzk(config, dbOk) {
         process.exitCode = err.code === 'EADDRINUSE' ? ExitCode.PORT_IN_USE : ExitCode.SERVER_START_FAILED;
         return;
     }
+    // 중계 서버가 열린 뒤부터 정상 종료 순서를 쓴다. 그 전의 Ctrl+C는 Node 기본 동작(즉시 종료)
+    serverEvents.on('shutdown', Shutdown);
+    process.on('SIGINT', Shutdown);
     try {
         await StartChzzk(serverData, dbOk);
     } catch (err) {

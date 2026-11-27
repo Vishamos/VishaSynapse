@@ -15,9 +15,10 @@ function IsValidPort(port) {
     return Number.isInteger(port) && port >= 1 && port <= 65535;
 }
 
-function CreateClient(socket) {
+function CreateClient(socket, remoteAddress) {
     const client = {
         socket,
+        remoteAddress,          // server.shutdown 허용 판단에 쓴다 (§2.6b)
         status: ClientStatus.CONNECTING,
         signature: null,
         index: null,
@@ -99,8 +100,8 @@ const SocketServer = (port) => new Promise((resolve, reject) => {
         pingTimer = setInterval(CheckConnections, PING_INTERVAL_MS);
         resolve();
     });
-    server.on('connection', (socket) => {
-        const client = CreateClient(socket);
+    server.on('connection', (socket, req) => {
+        const client = CreateClient(socket, req.socket.remoteAddress);
         connections.add(client);
         console.log(`클라이언트 접속. 현재 연결: ${connections.size}`);
 
@@ -131,4 +132,25 @@ const SocketServer = (port) => new Promise((resolve, reject) => {
     });
 });
 
-module.exports = { SocketServer };
+// 정상 종료 ①: 새 접속을 받지 않는다. 기존 연결은 ws 8에서 자동으로 닫히지 않는다 (§2.6d)
+function StopAccepting() {
+    clearInterval(pingTimer);
+    pingTimer = null;
+    if (!server) return;
+    server.close();
+    server = null;
+}
+
+// 정상 종료 ③: 모든 연결을 1001 server_shutdown으로 끊고, 모두 'close'될 때까지 기다린다 (§2.6d)
+function CloseAllClients() {
+    const waits = [];
+    for (const client of connections) {
+        const socket = client.socket;
+        if (!socket) continue;
+        waits.push(new Promise((resolve) => socket.once('close', resolve)));
+        socket.close(CloseCode.SERVER_SHUTDOWN.code, CloseCode.SERVER_SHUTDOWN.reason);
+    }
+    return Promise.all(waits);
+}
+
+module.exports = { SocketServer, StopAccepting, CloseAllClients };
